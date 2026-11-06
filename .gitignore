@@ -1,0 +1,21 @@
+# Entornos y cachés
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Datos y artefactos locales
+/data/raw/*
+!/data/raw/.gitkeep
+/data/interim/*
+!/data/interim/.gitkeep
+/data/processed/*
+!/data/processed/.gitkeep
+/models/*
+!/models/.gitkeep
+/logs/*
+!/logs/.gitkeep
+/output/*
+!/output/.gitkeep
