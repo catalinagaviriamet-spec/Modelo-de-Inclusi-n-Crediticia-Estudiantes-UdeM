@@ -9,6 +9,7 @@ __pycache__/
 # Datos y artefactos locales
 /data/raw/*
 !/data/raw/.gitkeep
+!/data/raw/perfiles_crediticios_sinteticos.csv
 /data/interim/*
 !/data/interim/.gitkeep
 /data/processed/*
