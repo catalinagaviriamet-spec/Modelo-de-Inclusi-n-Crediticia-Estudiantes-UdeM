@@ -10,7 +10,7 @@ Proyecto de aprendizaje automático en la nube — Especialización en Ciencia d
 
 El proyecto explora cómo orientar a cada persona hacia educación financiera, un crédito pequeño con acompañamiento o un crédito de mayor monto según su perfil y capacidad de pago.
 
-Como punto de partida se creó una base de 30.000 perfiles financieros sintéticos. No contiene información de personas reales ni representa una muestra de estudiantes UdeM. Las rutas incluidas son etiquetas de referencia generadas con reglas demostrativas, no decisiones validadas para otorgar crédito. Ver [la ficha de datos, sus límites y el diccionario de campos](docs/datos_sinteticos.md).
+Como punto de partida se creó una base de 30.000 perfiles financieros sintéticos, con edades de 18 a 74 años y el campo `rango_edad`. No contiene información de personas reales ni representa una muestra de estudiantes UdeM. Esta versión incluye variables de perfil; las métricas y rutas de atención se definirán más adelante. Ver [la ficha de datos, sus límites y el diccionario de campos](docs/datos_sinteticos.md).
 
 Para regenerar el CSV con la semilla usada en la versión inicial:
 

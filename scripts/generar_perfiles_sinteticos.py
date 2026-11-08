@@ -37,7 +37,8 @@ class RNG:
 
 
 def make_row(i, rng):
-    age = rng.integer(18, 40)
+    age = rng.integer(18, 74)
+    age_range = "18-25" if age <= 25 else ("26-40" if age <= 40 else ("41-60" if age <= 60 else "61-74"))
     hogar = rng.choice(
         ["vive_solo", "comparte_vivienda", "vive_con_familia", "vive_con_pareja", "otro"],
         [10, 18, 42, 24, 6],
@@ -75,23 +76,11 @@ def make_row(i, rng):
     meses = rng.integer(1, 180) if historial else 0
     deuda = 0 if not historial or rng.chance(0.24) else rng.integer(40_000, max(50_000, min(2_500_000, ingreso // 2 + 50_000)))
     ahorro = 0 if rng.chance(0.27) else rng.integer(20_000, max(50_000, min(12_000_000, ingreso * 4 + 100_000)))
-    educacion_financiera = rng.integer(0, 10)
     moras = 0 if not historial else rng.choice([0, 1, 2, 3, 4], [61, 20, 11, 5, 3])
     solicitado = rng.integer(200_000, 8_000_000)
-    cuota_estimada = int(solicitado / rng.choice([6, 12, 18, 24, 36]))
-    carga = round((deuda + cuota_estimada) / max(ingreso, 1), 4) if ingreso else 9.9999
-
-    # Etiqueta de referencia sintética; no es una recomendación de crédito real.
-    if educacion_financiera <= 3 or (ingreso == 0 and ahorro < 500_000):
-        ruta = "educacion_financiera"
-    elif (not historial or moras >= 2 or carga > 0.35
-          or tipo_ingreso in {"ingreso_variable", "informal", "apoyo_familiar"}):
-        ruta = "microcredito_con_acompanamiento"
-    else:
-        ruta = "credito_mayor_capacidad"
 
     return {
-        "id_persona": f"SYN-{i:06d}", "edad": age, "tipo_hogar": hogar,
+        "id_persona": f"SYN-{i:06d}", "edad": age, "rango_edad": age_range, "tipo_hogar": hogar,
         "personas_hogar": n_hogar, "personas_a_cargo": dependientes,
         "nivel_estudio": estudio, "situacion_laboral": empleo, "tipo_ingreso": tipo_ingreso,
         "ingreso_mensual_cop": ingreso, "tiene_ingresos": int(ingreso > 0),
@@ -99,9 +88,7 @@ def make_row(i, rng):
         "pago_servicios_publicos_cop": servicios, "tipo_plan_celular": celular,
         "experiencia_crediticia": experiencia, "meses_historial_crediticio": meses,
         "deuda_mensual_cop": deuda, "ahorro_disponible_cop": ahorro,
-        "puntaje_educacion_financiera_0_10": educacion_financiera,
         "moras_ultimos_12_meses": moras, "monto_solicitado_cop": solicitado,
-        "carga_financiera_proyectada": carga, "ruta_referencia_sintetica": ruta,
     }
 
 
