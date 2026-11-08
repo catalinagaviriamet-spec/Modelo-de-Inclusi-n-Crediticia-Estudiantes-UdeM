@@ -29,3 +29,7 @@ python scripts/generar_perfiles_sinteticos.py --n 30000 --seed 20261108
 - `scripts/`: utilidades ejecutables.
 - `src/`: código fuente organizado por componente.
 - `tests/`: pruebas.
+
+## Análisis exploratorio
+
+El primer EDA está en [`notebooks/01_eda_perfiles_sinteticos.ipynb`](notebooks/01_eda_perfiles_sinteticos.ipynb). Presenta la estructura, los grupos de variables, distribuciones, relaciones descriptivas y controles de calidad de la base sintética.
