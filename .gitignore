@@ -14,6 +14,7 @@ __pycache__/
 !/data/interim/.gitkeep
 /data/processed/*
 !/data/processed/.gitkeep
+!/data/processed/perfiles_crediticios_procesados.csv
 /models/*
 !/models/.gitkeep
 /logs/*

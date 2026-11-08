@@ -16,7 +16,10 @@ Para regenerar el CSV con la semilla usada en la versión inicial:
 
 ```bash
 python scripts/generar_perfiles_sinteticos.py --n 30000 --seed 20261108
+python scripts/ejecutar_pipeline_perfil.py
 ```
+
+El pipeline calcula el nivel de educación financiera proxy, suma los gastos esenciales y calcula el flujo mensual disponible a partir de los campos de entrada. La salida procesada queda en `data/processed/perfiles_crediticios_procesados.csv`.
 
 ## Estructura
 

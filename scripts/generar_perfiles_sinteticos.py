@@ -64,9 +64,24 @@ def make_row(i, rng):
     }
     low, high = rangos[tipo_ingreso]
     ingreso = rng.integer(low, high)
+    descuento_porcentual = rng.integer(6, 14) if tipo_ingreso == "salario_fijo" else rng.integer(0, 5)
+    ingreso_neto = ingreso * (100 - descuento_porcentual) // 100
     vivienda = int(rng.chance(0.17 if age < 25 else (0.30 if age < 33 else 0.43)))
     vehiculo = int(rng.chance(0.12 if ingreso < 1_500_000 else (0.34 if ingreso < 4_000_000 else 0.58)))
     servicios = 0 if hogar == "comparte_vivienda" and rng.chance(0.30) else rng.integer(70_000, 750_000)
+    if vivienda:
+        gasto_vivienda = rng.integer(0, 450_000)
+    elif hogar == "comparte_vivienda":
+        gasto_vivienda = rng.integer(100_000, 650_000)
+    elif hogar == "vive_con_familia":
+        gasto_vivienda = rng.integer(0, 500_000)
+    else:
+        gasto_vivienda = rng.integer(250_000, 1_800_000)
+    gasto_alimentacion = rng.integer(180_000, 550_000) + dependientes * rng.integer(70_000, 180_000)
+    gasto_transporte = rng.integer(30_000, 450_000) if empleo not in {"desempleado"} else rng.integer(0, 180_000)
+    gasto_salud = rng.integer(0, 250_000)
+    gasto_educacion = rng.integer(0, 350_000) if empleo in {"estudia", "estudia_y_trabaja"} else rng.integer(0, 180_000)
+    otros_gastos = rng.integer(0, 350_000)
     celular = rng.choice(["sin_linea", "prepago", "pospago"], [3, 41 if ingreso < 1_500_000 else 24, 56 if ingreso < 1_500_000 else 73])
     experiencia = rng.choice(
         ["sin_experiencia", "credito_formal", "credito_informal", "tarjeta_credito", "microcredito"],
@@ -77,12 +92,6 @@ def make_row(i, rng):
     deuda = 0 if not historial or rng.chance(0.24) else rng.integer(40_000, max(50_000, min(2_500_000, ingreso // 2 + 50_000)))
     ahorro = 0 if rng.chance(0.27) else rng.integer(20_000, max(50_000, min(12_000_000, ingreso * 4 + 100_000)))
     moras = 0 if not historial else rng.choice([0, 1, 2, 3, 4], [61, 20, 11, 5, 3])
-    if not historial:
-        nivel_educacion_financiera = "bajo"
-    elif meses >= 12 and moras == 0:
-        nivel_educacion_financiera = "alto"
-    else:
-        nivel_educacion_financiera = "medio"
     solicitado = rng.integer(200_000, 8_000_000)
 
     return {
@@ -90,11 +99,18 @@ def make_row(i, rng):
         "personas_hogar": n_hogar, "personas_a_cargo": dependientes,
         "nivel_estudio": estudio, "situacion_laboral": empleo, "tipo_ingreso": tipo_ingreso,
         "ingreso_mensual_cop": ingreso, "tiene_ingresos": int(ingreso > 0),
+        "ingreso_neto_mensual_cop": ingreso_neto,
         "tiene_vivienda_propia": vivienda, "tiene_vehiculo": vehiculo,
-        "pago_servicios_publicos_cop": servicios, "tipo_plan_celular": celular,
+        "gasto_vivienda_mensual_cop": gasto_vivienda,
+        "gasto_alimentacion_mensual_cop": gasto_alimentacion,
+        "gasto_transporte_mensual_cop": gasto_transporte,
+        "gasto_salud_mensual_cop": gasto_salud,
+        "gasto_educacion_mensual_cop": gasto_educacion,
+        "pago_servicios_publicos_cop": servicios,
+        "otros_gastos_esenciales_mensuales_cop": otros_gastos,
+        "tipo_plan_celular": celular,
         "experiencia_crediticia": experiencia, "meses_historial_crediticio": meses,
-        "nivel_educacion_financiera": nivel_educacion_financiera,
-        "deuda_mensual_cop": deuda, "ahorro_disponible_cop": ahorro,
+        "cuotas_deudas_vigentes_cop": deuda, "ahorro_disponible_cop": ahorro,
         "moras_ultimos_12_meses": moras, "monto_solicitado_cop": solicitado,
     }
 

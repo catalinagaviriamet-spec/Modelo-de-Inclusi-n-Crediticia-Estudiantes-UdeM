@@ -4,15 +4,18 @@
 
 `data/raw/perfiles_crediticios_sinteticos.csv` contiene 30.000 perfiles completamente ficticios para explorar el flujo de una ficha y desarrollar prototipos. No proviene de clientes, estudiantes, entidades financieras ni encuestas; no representa una muestra estadística de Colombia o de la Universidad de Medellín.
 
-Esta versión contiene variables de perfil de entrada y una categoría derivada llamada `nivel_educacion_financiera`. En esta fase se calcula a partir del historial crediticio como un proxy solicitado para el ejercicio, no a partir de una prueba de conocimientos. La capacidad de pago y las rutas de atención se definirán más adelante; no se incluyen como columnas en el CSV.
+El CSV de `data/raw/` contiene los campos de entrada que podría entregar una persona. El pipeline genera `nivel_educacion_financiera`, `gastos_esenciales_mensuales_cop` y `flujo_mensual_disponible_cop`; la salida se guarda en `data/processed/`. Así, la categoría y el flujo se calculan con el mismo código durante el prototipado y en una futura integración de producción.
 
 ## Tamaño y reproducibilidad
 
 - Registros: 30.000 (se puede cambiar con `--n`).
+- El CSV de entrada contiene 28 campos; el procesamiento añade 3 variables derivadas y genera 31 campos.
 - Semilla inicial: `20261108`.
 - Moneda de referencia: pesos colombianos (COP).
 - Generación reproducible: `python scripts/generar_perfiles_sinteticos.py`.
 - Para regenerar: `python scripts/generar_perfiles_sinteticos.py --n 30000 --seed 20261108`.
+- Para procesar los campos de entrada: `python scripts/ejecutar_pipeline_perfil.py`.
+- Salida procesada predeterminada: `data/processed/perfiles_crediticios_procesados.csv`.
 
 El generador crea valores variados y relaciones plausibles para demostración; las distribuciones no se calibraron con evidencia poblacional. La base puede compartirse porque no contiene datos personales reales.
 
@@ -29,19 +32,28 @@ El generador crea valores variados y relaciones plausibles para demostración; l
 | `nivel_estudio` | Nivel educativo sintético. |
 | `situacion_laboral` | Situación laboral sintética. |
 | `tipo_ingreso` | Sin ingresos, salario fijo, ingreso variable, informal o apoyo familiar. |
-| `ingreso_mensual_cop` | Ingreso mensual sintético en COP. |
+| `ingreso_mensual_cop` | Ingreso mensual reportado sintético en COP. |
 | `tiene_ingresos` | Indicador 1/0 derivado de ingreso mensual mayor que cero. |
+| `ingreso_neto_mensual_cop` | Ingreso neto mensual que usa el cálculo del flujo disponible. En una ficha real debe ingresarlo o confirmarlo el cliente. |
 | `tiene_vivienda_propia` | Indicador sintético 1/0. |
 | `tiene_vehiculo` | Indicador sintético 1/0. |
+| `gasto_vivienda_mensual_cop` | Gasto mensual de vivienda del cliente/hogar en COP. |
+| `gasto_alimentacion_mensual_cop` | Gasto mensual de alimentación en COP. |
+| `gasto_transporte_mensual_cop` | Gasto mensual de transporte en COP. |
+| `gasto_salud_mensual_cop` | Gasto mensual de salud en COP. |
+| `gasto_educacion_mensual_cop` | Gasto mensual de educación en COP. |
 | `pago_servicios_publicos_cop` | Pago mensual sintético de servicios del hogar en COP. |
+| `otros_gastos_esenciales_mensuales_cop` | Otros gastos esenciales mensuales en COP. |
 | `tipo_plan_celular` | Sin línea, prepago o pospago. |
 | `experiencia_crediticia` | Sin experiencia, crédito formal o informal, tarjeta o microcrédito. |
 | `meses_historial_crediticio` | Meses sintéticos de historial; cero si no tiene experiencia. |
-| `nivel_educacion_financiera` | Proxy categórico derivado del historial: `bajo`, `medio` o `alto`, según la regla abajo. No mide conocimientos financieros directamente. |
-| `deuda_mensual_cop` | Obligaciones mensuales actuales sintéticas en COP. |
+| `cuotas_deudas_vigentes_cop` | Suma mensual sintética de las cuotas de deudas vigentes en COP. |
 | `ahorro_disponible_cop` | Ahorro disponible sintético en COP. |
 | `moras_ultimos_12_meses` | Número sintético de moras recientes; cero si no tiene historial. |
 | `monto_solicitado_cop` | Monto solicitado sintético en COP. |
+| `nivel_educacion_financiera` | Campo derivado por el pipeline (`bajo`, `medio`, `alto`). Es un proxy del historial y no está en el CSV crudo. |
+| `gastos_esenciales_mensuales_cop` | Campo derivado por el pipeline: suma de vivienda, alimentación, transporte, salud, educación, servicios públicos y otros esenciales. |
+| `flujo_mensual_disponible_cop` | Campo derivado por el pipeline: ingreso neto menos gastos esenciales y cuotas de deudas vigentes. Puede ser negativo. |
 
 ## Regla del proxy de educación financiera
 
@@ -49,18 +61,18 @@ El generador crea valores variados y relaciones plausibles para demostración; l
 - `medio`: tiene historial, pero dura menos de 12 meses o registra una o más moras en los últimos 12 meses.
 - `alto`: tiene al menos 12 meses de historial y ninguna mora registrada en los últimos 12 meses.
 
-La regla sirve para producir una categoría antes de probar la clasificación, pero **historial crediticio y educación financiera no son equivalentes**. No tener historial puede deberse a barreras de acceso, no a falta de conocimientos. Para una evaluación válida de educación financiera harían falta preguntas o ejercicios que midan conocimientos y comportamientos directamente. Si se usa esta categoría como objetivo de una clasificación, no se deben incluir sus variables de origen (`experiencia_crediticia`, `meses_historial_crediticio` y `moras_ultimos_12_meses`) entre los predictores; hacerlo filtraría la respuesta al modelo.
+La regla se aplica dentro de `src/pipeline/perfil_financiero.py` antes de la clasificación. Sirve para producir la categoría operativa solicitada, pero **historial crediticio y educación financiera no son equivalentes**. No tener historial puede deberse a barreras de acceso, no a falta de conocimientos. Para una evaluación válida harían falta preguntas o ejercicios que midan conocimientos y comportamientos directamente. Si se usa esta categoría como objetivo de una clasificación, no se deben incluir sus variables de origen (`experiencia_crediticia`, `meses_historial_crediticio` y `moras_ultimos_12_meses`) entre los predictores; hacerlo filtraría la respuesta al modelo.
 
-## Capacidad de pago: definición pendiente
+## Flujo mensual disponible en el pipeline
 
-El CSV **no tiene actualmente una variable calculada de capacidad de pago**. Incluye algunos insumos —ingreso mensual, deuda mensual, pago de servicios, personas a cargo, ahorro y monto solicitado—, pero faltan gastos esenciales del hogar (por ejemplo, vivienda, alimentación, transporte, salud y educación), la confirmación de si el ingreso es neto, y el plazo y la tasa del crédito solicitado.
+La función `calcular_variables_derivadas(perfil)` requiere ingreso neto, los siete rubros de gastos esenciales y las cuotas de deudas vigentes. Si falta un dato, no lo asume como cero: devuelve un error para que el formulario solicite la información. Los montos deben ser finitos, no negativos y expresados en pesos enteros. El resultado puede ser negativo y se conserva como señal de déficit.
 
-Una definición operativa a validar sería:
+El cálculo implementado es:
 
-`flujo_libre_mensual = ingreso_neto_mensual - gastos_esenciales_mensuales - cuotas_deudas_vigentes`
+`gastos_esenciales_mensuales_cop = vivienda + alimentación + transporte + salud + educación + servicios públicos + otros esenciales`
 
-`cuota_nueva_estimada = cuota del monto solicitado, calculada con plazo, tasa, frecuencia y cargos del producto`
+`flujo_mensual_disponible_cop = ingreso_neto_mensual_cop - gastos_esenciales_mensuales_cop - cuotas_deudas_vigentes_cop`
 
-Se compararía la cuota nueva con el flujo libre y se reportaría, como indicador complementario, la carga financiera total: `(cuotas vigentes + cuota nueva estimada) / ingreso neto mensual`. Si el ingreso neto es cero o desconocido, el indicador se marca como no calculable, no como cero ni como una capacidad positiva. Los servicios públicos deben contarse dentro de los gastos esenciales una sola vez.
+Este flujo es un insumo de capacidad de pago, no un monto de crédito aprobado ni una decisión final. Para comparar con una nueva cuota se necesitan además monto, plazo, tasa, frecuencia y cargos del producto. Los servicios públicos se suman una sola vez dentro de los gastos esenciales.
 
-La Superintendencia Financiera describe el análisis de capacidad de pago con flujos de ingresos y egresos, flujo de caja, endeudamiento y características financieras del crédito. La fórmula anterior es una propuesta de trabajo para este proyecto; no es un umbral regulatorio ni debe convertirse en una decisión automática sin validación. [Referencia de la SFC](https://www.superfinanciera.gov.co/publicaciones/10096970/normativanormativa-generalboletin-juridico-superintendencia-financieraboletin-juridico-numero-credito-deudor-solidario-analisis-de-endeudamiento-10096970/).
+La Superintendencia Financiera describe el análisis de capacidad de pago con flujos de ingresos y egresos, flujo de caja, endeudamiento y características financieras del crédito. Este cálculo es un insumo del proyecto, no un umbral regulatorio ni una decisión automática de otorgamiento. [Referencia de la SFC](https://www.superfinanciera.gov.co/publicaciones/10096970/normativanormativa-generalboletin-juridico-superintendencia-financieraboletin-juridico-numero-credito-deudor-solidario-analisis-de-endeudamiento-10096970/).
