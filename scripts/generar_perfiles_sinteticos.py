@@ -77,6 +77,12 @@ def make_row(i, rng):
     deuda = 0 if not historial or rng.chance(0.24) else rng.integer(40_000, max(50_000, min(2_500_000, ingreso // 2 + 50_000)))
     ahorro = 0 if rng.chance(0.27) else rng.integer(20_000, max(50_000, min(12_000_000, ingreso * 4 + 100_000)))
     moras = 0 if not historial else rng.choice([0, 1, 2, 3, 4], [61, 20, 11, 5, 3])
+    if not historial:
+        nivel_educacion_financiera = "bajo"
+    elif meses >= 12 and moras == 0:
+        nivel_educacion_financiera = "alto"
+    else:
+        nivel_educacion_financiera = "medio"
     solicitado = rng.integer(200_000, 8_000_000)
 
     return {
@@ -87,6 +93,7 @@ def make_row(i, rng):
         "tiene_vivienda_propia": vivienda, "tiene_vehiculo": vehiculo,
         "pago_servicios_publicos_cop": servicios, "tipo_plan_celular": celular,
         "experiencia_crediticia": experiencia, "meses_historial_crediticio": meses,
+        "nivel_educacion_financiera": nivel_educacion_financiera,
         "deuda_mensual_cop": deuda, "ahorro_disponible_cop": ahorro,
         "moras_ultimos_12_meses": moras, "monto_solicitado_cop": solicitado,
     }
