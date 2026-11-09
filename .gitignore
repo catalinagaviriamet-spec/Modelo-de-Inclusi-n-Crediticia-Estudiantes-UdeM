@@ -17,6 +17,7 @@ __pycache__/
 !/data/processed/perfiles_crediticios_procesados.csv
 !/data/processed/comparacion_clusterizaciones.csv
 !/data/processed/perfiles_clusterizados.csv
+!/data/processed/estabilidad_gower_kmedoids_k3.csv
 /models/*
 !/models/.gitkeep
 /logs/*

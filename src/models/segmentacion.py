@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix, hstack
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import adjusted_rand_score, silhouette_score
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
@@ -276,6 +276,100 @@ def comparar_clusterizaciones(
     elegido = (metricas.loc[0, "algoritmo"], int(metricas.loc[0, "k"]))
     etiquetas = pd.Series(labels_completos[elegido], index=df.index, name="cluster")
     return metricas, etiquetas, elegido, labels_completos
+
+
+def analizar_estabilidad_gower_kmedoids(
+    df: pd.DataFrame,
+    k=3,
+    seed=42,
+    repeticiones=10,
+    gower_train_size=1800,
+    evaluation_size=800,
+):
+    """Compara asignaciones de Gower + K-Medoids bajo distintas muestras.
+
+    Usa el mismo subconjunto de evaluación y cambia la muestra usada para
+    elegir los medoides. ARI es invariante al nombre asignado a cada cluster.
+    """
+    if repeticiones < 2:
+        raise ValueError("Se requieren al menos dos repeticiones para medir estabilidad.")
+    numericas, categoricas = _seleccionar(df)
+    n = len(df)
+    if n < gower_train_size + evaluation_size:
+        raise ValueError("La base es demasiado pequeña para los tamaños de muestra elegidos.")
+
+    rng = np.random.default_rng(seed)
+    permutacion = rng.permutation(n)
+    n_eval = min(evaluation_size, max(50, int(n * 0.20)))
+    eval_idx = permutacion[:n_eval]
+    train_pool = permutacion[n_eval:]
+    gower_num, minimo, rangos = _preparar_gower(numericas, train_pool)
+    d_eval = _gower(
+        gower_num[eval_idx], categoricas[eval_idx],
+        gower_num[eval_idx], categoricas[eval_idx], minimo, rangos,
+    )
+    np.fill_diagonal(d_eval, 0.0)
+
+    muestras = []
+    distancias_muestras = []
+    for repeticion in range(repeticiones):
+        semilla = seed + repeticion
+        rng_corrida = np.random.default_rng(semilla)
+        muestra = rng_corrida.choice(
+            train_pool, size=min(gower_train_size, len(train_pool)), replace=False
+        )
+        d_train = _gower(
+            gower_num[muestra], categoricas[muestra],
+            gower_num[muestra], categoricas[muestra], minimo, rangos,
+        )
+        np.fill_diagonal(d_train, 0.0)
+        muestras.append(muestra)
+        distancias_muestras.append(d_train)
+
+    semilla_pam = seed + 100 + k
+
+    def asignar(muestra, distancias, semilla_ajuste):
+        medoids_locales, _ = _pam_muestreado(distancias, k, semilla_ajuste)
+        medoids = muestra[medoids_locales]
+        d_eval_medoids = _gower(
+            gower_num[eval_idx], categoricas[eval_idx],
+            gower_num[medoids], categoricas[medoids], minimo, rangos,
+        )
+        return d_eval_medoids.argmin(axis=1)
+
+    # Cambia la muestra y conserva la inicialización de PAM.
+    labels_muestras = [
+        asignar(muestra, d_train, semilla_pam)
+        for muestra, d_train in zip(muestras, distancias_muestras)
+    ]
+    # Conserva la muestra y cambia la inicialización aleatoria de PAM.
+    labels_inicializacion = [
+        asignar(muestras[0], distancias_muestras[0], semilla_pam + repeticion)
+        for repeticion in range(repeticiones)
+    ]
+
+    filas = []
+    for repeticion, labels in enumerate(labels_muestras):
+        conteos = np.bincount(labels, minlength=k)
+        silhouette = (
+            float(silhouette_score(d_eval, labels, metric="precomputed"))
+            if 1 < len(np.unique(labels)) < len(labels)
+            else np.nan
+        )
+        filas.append({
+            "repeticion": repeticion + 1,
+            "semilla_muestra": seed + repeticion,
+            "silhouette_gower_evaluacion": silhouette,
+            "ari_remuestreo_vs_referencia": float(
+                adjusted_rand_score(labels_muestras[0], labels)
+            ),
+            "ari_inicializacion_vs_referencia": float(
+                adjusted_rand_score(labels_inicializacion[0], labels_inicializacion[repeticion])
+            ),
+            "cluster_menor_pct": float(conteos.min() / len(labels) * 100),
+            "cluster_mayor_pct": float(conteos.max() / len(labels) * 100),
+        })
+    return pd.DataFrame(filas)
 
 
 def _fila_resultado(algoritmo, k, silhouette, segundos, labels):
