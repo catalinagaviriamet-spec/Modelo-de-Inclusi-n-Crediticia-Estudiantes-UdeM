@@ -74,3 +74,5 @@ La configuración `render.yaml` define un servicio web Docker gratuito que toma 
 **API pública:** <https://modelo-inclusion-crediticia-api.onrender.com> · [Documentación interactiva](https://modelo-inclusion-crediticia-api.onrender.com/docs) · [Estado](https://modelo-inclusion-crediticia-api.onrender.com/health). En `/docs`, usa **POST /v1/clusterizar → Try it out → Execute**; la ficha sintética de ejemplo ya viene cargada.
 
 El servicio gratuito se duerme tras 15 minutos sin tráfico y puede tardar alrededor de un minuto o más en responder al primer acceso. Es una opción para la demostración académica; no se ofrece como servicio de producción. El contenedor incluye la API, el código del modelo y su artefacto, no los CSV. Usa únicamente perfiles sintéticos.
+
+Como el servicio se conectó mediante la URL pública del repositorio, después de subir cambios a GitHub hay que publicarlos desde Render con **Manual Deploy > Deploy latest commit**.
