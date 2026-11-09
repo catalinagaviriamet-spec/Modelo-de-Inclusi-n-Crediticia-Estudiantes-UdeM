@@ -1,0 +1,34 @@
+name: Pruebas unitarias
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unitarias:
+    name: Comprobar comportamientos clave
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v7
+
+      - name: Preparar Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+
+      - name: Instalar dependencias bloqueadas
+        run: uv sync --locked --no-dev
+
+      - name: Ejecutar pruebas unitarias
+        run: uv run --no-sync python -m unittest discover -s tests/unit -v

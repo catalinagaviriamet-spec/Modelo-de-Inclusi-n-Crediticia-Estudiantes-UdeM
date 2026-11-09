@@ -58,7 +58,7 @@ Los resultados por repetición se guardan en `data/processed/estabilidad_gower_k
 
 ## Validación de comportamientos clave
 
-Las pruebas unitarias comprueban el proxy de educación financiera, el flujo mensual disponible (incluidos déficits) y las tres rutas académicas que devuelve la API. Para ejecutarlas desde la raíz del repositorio:
+Las pruebas unitarias comprueban el proxy de educación financiera, el flujo mensual disponible (incluidos déficits) y las tres rutas académicas que devuelve la API. También se ejecutan automáticamente en GitHub Actions al subir cambios a `main` o abrir un pull request dirigido a esa rama. Para correrlas localmente desde la raíz del repositorio:
 
 ```bash
 uv run python -m unittest discover -s tests/unit -v
