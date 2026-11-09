@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: modelo-inclusion-crediticia-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./deploy/container/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true

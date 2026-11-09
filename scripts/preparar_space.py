@@ -26,7 +26,7 @@ def main() -> None:
         raise SystemExit(f"No se encontró el artefacto del modelo: {modelo}")
 
     destino.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(PLANTILLA / "Dockerfile", destino / "Dockerfile")
+    shutil.copy2(ROOT / "deploy/container/Dockerfile", destino / "Dockerfile")
     shutil.copy2(PLANTILLA / "README.md", destino / "README.md")
     for archivo in ("pyproject.toml", "uv.lock"):
         shutil.copy2(ROOT / archivo, destino / archivo)
