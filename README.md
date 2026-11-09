@@ -56,6 +56,16 @@ uv run python scripts/analizar_estabilidad_cluster.py --seed 42 --repetitions 10
 
 Los resultados por repetición se guardan en `data/processed/estabilidad_gower_kmedoids_k3.csv`.
 
+## Validación de comportamientos clave
+
+Las pruebas unitarias comprueban el proxy de educación financiera, el flujo mensual disponible (incluidos déficits) y las tres rutas académicas que devuelve la API. Para ejecutarlas desde la raíz del repositorio:
+
+```bash
+uv run python -m unittest discover -s tests/unit -v
+```
+
+El alcance y las reglas que se validan están documentados en [`docs/validacion_comportamientos_clave.md`](docs/validacion_comportamientos_clave.md).
+
 ## API académica
 
 La API es una demostración sencilla para que el equipo y el profesor inspeccionen el modelo con perfiles sintéticos. Además del cluster y las variables calculadas, devuelve una ruta académica ilustrativa. Los cupos que aparecen son ficticios y la salida no es una oferta, aprobación ni evaluación de una solicitud real. La API no guarda las solicitudes.
