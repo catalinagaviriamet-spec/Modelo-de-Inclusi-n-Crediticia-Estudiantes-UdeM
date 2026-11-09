@@ -205,6 +205,104 @@ def _pam_muestreado(
     return mejores_medoids, labels, mejor_costo, mejor_iteraciones
 
 
+@dataclass
+class GowerKMedoidsPredictor:
+    """Modelo mínimo para asignar perfiles nuevos a medoides ya ajustados."""
+
+    medoids_num: np.ndarray
+    medoids_cat: np.ndarray
+    minimo: np.ndarray
+    rangos: np.ndarray
+    k: int
+    seed: int
+    train_sample_size: int
+    n_starts: int
+    max_iter: int
+    cluster_profiles: list[dict]
+    dataset_size: int = 0
+
+    def predict(self, df: pd.DataFrame):
+        numericas, categoricas = _seleccionar(df)
+        distancias = _gower(
+            numericas, categoricas,
+            self.medoids_num, self.medoids_cat,
+            self.minimo, self.rangos,
+        )
+        labels = distancias.argmin(axis=1)
+        distancias_minimas = distancias.min(axis=1)
+        return labels, distancias_minimas
+
+
+def _resumir_clusters(df: pd.DataFrame, labels) -> list[dict]:
+    datos = df.copy()
+    datos["cluster"] = np.asarray(labels)
+    numericas = [
+        "edad", "personas_a_cargo", "ingreso_neto_mensual_cop",
+        "gastos_esenciales_mensuales_cop", "cuotas_deudas_vigentes_cop",
+        "flujo_mensual_disponible_cop", "meses_historial_crediticio",
+    ]
+    categoricas = ["situacion_laboral", "tipo_ingreso", "experiencia_crediticia"]
+    perfiles = []
+    for cluster, grupo in datos.groupby("cluster", sort=True):
+        mediana = grupo[numericas].median().round(0).astype(int).to_dict()
+        moda = {
+            campo: str(grupo[campo].mode().iloc[0])
+            for campo in categoricas
+        }
+        nivel = (grupo["nivel_educacion_financiera"]
+                 .value_counts(normalize=True).mul(100).round(1).to_dict())
+        perfiles.append({
+            "cluster_id": int(cluster),
+            "perfiles": int(len(grupo)),
+            "porcentaje": round(len(grupo) / len(datos) * 100, 1),
+            "medianas": mediana,
+            "categorias_mas_frecuentes": moda,
+            "educacion_financiera_proxy_pct": nivel,
+        })
+    return perfiles
+
+
+def ajustar_gower_kmedoids(
+    df: pd.DataFrame,
+    k=3,
+    seed=42,
+    train_sample_size=1800,
+    n_starts=20,
+    max_iter=50,
+) -> GowerKMedoidsPredictor:
+    """Ajusta medoids Gower en una muestra y crea predictor serializable."""
+    numericas, categoricas = _seleccionar(df)
+    if len(df) < max(train_sample_size, k):
+        raise ValueError("No hay suficientes perfiles para el tamaño de ajuste elegido.")
+    rng = np.random.default_rng(seed)
+    sample_indices = rng.choice(len(df), size=train_sample_size, replace=False)
+    _, minimo, rangos = _preparar_gower(numericas, sample_indices)
+    train_num = numericas[sample_indices]
+    train_cat = categoricas[sample_indices]
+    d_train = _gower(train_num, train_cat, train_num, train_cat, minimo, rangos)
+    np.fill_diagonal(d_train, 0.0)
+    medoids_locales, _, _, _ = _pam_muestreado(
+        d_train, k, seed + 100 + k,
+        max_iter=max_iter, n_starts=n_starts,
+    )
+    medoids_globales = sample_indices[medoids_locales]
+    predictor = GowerKMedoidsPredictor(
+        medoids_num=numericas[medoids_globales].copy(),
+        medoids_cat=categoricas[medoids_globales].copy(),
+        minimo=minimo,
+        rangos=rangos,
+        k=k,
+        seed=seed,
+        train_sample_size=train_sample_size,
+        n_starts=n_starts,
+        max_iter=max_iter,
+        cluster_profiles=[],
+    )
+    labels, _ = predictor.predict(df)
+    predictor.cluster_profiles = _resumir_clusters(df, labels)
+    return predictor
+
+
 def comparar_clusterizaciones(
     df: pd.DataFrame,
     k_values=(3, 4, 5, 6),

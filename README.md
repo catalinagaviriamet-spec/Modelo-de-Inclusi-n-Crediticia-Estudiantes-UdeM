@@ -55,3 +55,14 @@ uv run python scripts/analizar_estabilidad_cluster.py --seed 42 --repetitions 10
 ```
 
 Los resultados por repetición se guardan en `data/processed/estabilidad_gower_kmedoids_k3.csv`.
+
+## API académica
+
+La API es una demostración sencilla para que el equipo y el profesor inspeccionen el modelo con perfiles sintéticos. No guarda las solicitudes ni devuelve recomendaciones, montos o aprobaciones de crédito.
+
+```bash
+uv run python scripts/entrenar_modelo_api.py
+uv run uvicorn api.main:app --host 127.0.0.1 --port 8000
+```
+
+Al iniciar, abre `http://127.0.0.1:8000/docs` para probar `POST /v1/clusterizar`. `GET /v1/modelo` muestra el método, sus parámetros y el resumen de los tres clusters. El esquema de entrada y la respuesta se describen en OpenAPI. La síntesis interpretativa está en [`docs/perfiles_clusters_api.md`](docs/perfiles_clusters_api.md). Ingresen únicamente datos sintéticos de prueba; la demo no está pensada para datos personales reales.

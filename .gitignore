@@ -22,6 +22,7 @@ __pycache__/
 !/data/processed/estabilidad_gower_kmedoids_k3_train3000.csv
 /models/*
 !/models/.gitkeep
+!/models/gower_kmedoids_k3.joblib
 /logs/*
 !/logs/.gitkeep
 /output/*
