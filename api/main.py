@@ -104,11 +104,86 @@ class VariablesDerivadas(BaseModel):
     flujo_mensual_disponible_cop: int
 
 
+class RecomendacionAcademica(BaseModel):
+    nombre_grupo: str
+    tipo: Literal["revision_formal", "cupo_simulado", "educacion_financiera"]
+    mensaje: str
+    cupo_simulado_cop: int | None = None
+    fundamento: str
+    aclaracion: str
+
+
 class ResultadoCluster(BaseModel):
     cluster_id: int
     distancia_gower_al_medoid: float
     variables_derivadas: VariablesDerivadas
+    recomendacion: RecomendacionAcademica
     nota: str
+
+
+def construir_recomendacion(cluster_id: int, flujo_disponible: int) -> RecomendacionAcademica:
+    """Construye una ruta demostrativa; no representa una decisión crediticia real."""
+    if cluster_id == 0:
+        fundamento = (
+            "El perfil quedó en el grupo exploratorio asociado a experiencia crediticia. "
+            "El flujo disponible es positivo." if flujo_disponible > 0 else
+            "El perfil quedó en el grupo exploratorio asociado a experiencia crediticia. "
+            "El flujo disponible no es positivo y debe revisarse antes de evaluar cualquier monto."
+        )
+        return RecomendacionAcademica(
+            nombre_grupo="Viabilidad estudio formal de crédito",
+            tipo="revision_formal",
+            mensaje=(
+                "Dirígete a la siguiente sesión y completa la información para revisar "
+                "el crédito que más se acomode a tus necesidades."
+            ),
+            fundamento=fundamento,
+            aclaracion=(
+                "Esta ruta solo indica continuar una evaluación académica. No significa "
+                "que el crédito sea viable, esté preaprobado o vaya a ser otorgado."
+            ),
+        )
+    if cluster_id == 1:
+        cupo = 500_000 if flujo_disponible > 0 else 300_000
+        cupo_formateado = f"{cupo:,}".replace(",", ".")
+        if flujo_disponible > 0:
+            fundamento = "En este ejercicio, el flujo mensual disponible calculado es positivo."
+        else:
+            fundamento = (
+                "En este ejercicio, el flujo mensual disponible calculado es cero o negativo; "
+                "por eso se muestra el cupo simulado menor."
+            )
+        return RecomendacionAcademica(
+            nombre_grupo="Cuida tu historial crediticio",
+            tipo="cupo_simulado",
+            mensaje=(
+                f"Para esta simulación académica se muestra un cupo de ${cupo_formateado} COP. "
+                "Continúa cuidando tu historial y revisa tu presupuesto."
+            ),
+            cupo_simulado_cop=cupo,
+            fundamento=fundamento,
+            aclaracion=(
+                "El cupo es un valor ficticio definido para el ejercicio, no una oferta ni "
+                "una recomendación de endeudamiento. Si el flujo es cero o negativo, revisa "
+                "ingresos, gastos y deudas antes de considerar una obligación real."
+            ),
+        )
+    return RecomendacionAcademica(
+        nombre_grupo="Iniciemos con educación financiera",
+        tipo="educacion_financiera",
+        mensaje=(
+            "Continúa a la siguiente sesión, donde encontrarás un curso corto e interactivo "
+            "de educación financiera que te preparará para tomar buenas decisiones con tu primer crédito."
+        ),
+        fundamento=(
+            "Este grupo exploratorio reúne principalmente perfiles sin experiencia crediticia "
+            "reportada en la ficha sintética."
+        ),
+        aclaracion=(
+            "La falta de historial no demuestra falta de conocimientos financieros. "
+            "El nivel de educación financiera del proyecto es un proxy derivado del historial."
+        ),
+    )
 
 
 @asynccontextmanager
@@ -126,7 +201,8 @@ app = FastAPI(
     title="API académica de inclusión crediticia",
     description=(
         "Demostración con perfiles sintéticos. Calcula variables financieras "
-        "derivadas y asigna un cluster exploratorio; no recomienda ni aprueba créditos."
+        "derivadas, asigna un cluster exploratorio y presenta una ruta académica simulada. "
+        "No evalúa solicitudes reales ni aprueba créditos."
     ),
     version="0.1.0",
     lifespan=lifespan,
@@ -168,7 +244,8 @@ def informacion_modelo(request: Request):
         },
         "limitacion": (
             "Las etiquetas describen grupos exploratorios de una base sintética; "
-            "no son puntajes de riesgo ni decisiones de crédito."
+            "las rutas mostradas por la API son reglas académicas ilustrativas, no "
+            "puntajes de riesgo, ofertas ni decisiones de crédito."
         ),
     }
 
@@ -195,12 +272,17 @@ def clusterizar(
     fila = {**datos, **derivadas}
     modelo: GowerKMedoidsPredictor = request.app.state.modelo
     etiquetas, distancias = modelo.predict(pd.DataFrame([fila]))
+    cluster_id = int(etiquetas[0])
     return ResultadoCluster(
-        cluster_id=int(etiquetas[0]),
+        cluster_id=cluster_id,
         distancia_gower_al_medoid=round(float(distancias[0]), 4),
         variables_derivadas=derivadas,
+        recomendacion=construir_recomendacion(
+            cluster_id, derivadas["flujo_mensual_disponible_cop"]
+        ),
         nota=(
-            "Resultado académico y exploratorio con datos sintéticos. "
-            "El cluster no determina elegibilidad, monto ni aprobación de un crédito."
+            "Resultado académico con datos sintéticos. La ruta y, cuando aplica, el cupo "
+            "son simulaciones didácticas; no determinan elegibilidad, monto ni aprobación "
+            "de un crédito real."
         ),
     )

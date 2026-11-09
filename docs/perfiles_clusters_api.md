@@ -12,6 +12,16 @@ Los montos se expresan en COP y se redondean para facilitar la lectura. Las cate
 
 ## Lectura global
 
-Los perfiles se pueden describir con señales reconocibles —historial y deuda, ingreso y flujo, experiencia crediticia—, pero **no quedan suficientemente separados ni estables para convertirlos en rutas de crédito**. En la comparación exploratoria, silhouette Gower fue aproximadamente 0,113; al variar la muestra, el ARI promedio frente a la referencia fue 0,26. La base es sintética y el nivel de educación financiera es un proxy derivado del historial, por lo que sus porcentajes son circulares y no una medición independiente.
+Los perfiles se pueden describir con señales reconocibles —historial y deuda, ingreso y flujo, experiencia crediticia—, pero **no quedan suficientemente separados ni estables para decidir rutas de crédito reales**. En la comparación exploratoria, silhouette Gower fue aproximadamente 0,113; al variar la muestra, el ARI promedio frente a la referencia fue 0,26. La base es sintética y el nivel de educación financiera es un proxy derivado del historial, por lo que sus porcentajes son circulares y no una medición independiente.
 
-La API devuelve `cluster_id` como etiqueta técnica y distancia al medoide. No transforma esas salidas en recomendación, aprobación, monto ni rechazo. Para inspeccionar el resumen programáticamente, consultar `GET /v1/modelo`.
+## Rutas académicas que devuelve la API
+
+`POST /v1/clusterizar` incluye `recomendacion`, con el nombre del grupo, un mensaje para la persona ficticia, el fundamento y una aclaración. Estas reglas sirven para presentar el ejercicio en clase; no son una capa validada para decisiones financieras reales.
+
+| Grupo | Nombre | Salida ilustrativa |
+|---|---|---|
+| 0 | **Viabilidad estudio formal de crédito** | Invita a la siguiente sesión a completar información para revisar qué crédito se acomoda a sus necesidades. No significa que el crédito sea viable o preaprobado. Si el flujo es cero o negativo, la respuesta indica que debe revisarse antes de evaluar un monto. |
+| 1 | **Cuida tu historial crediticio** | Muestra un cupo ficticio de **$300.000 COP** si el flujo mensual disponible es cero o negativo, y **$500.000 COP** si es positivo. El cupo es una regla didáctica; si el flujo no es positivo, la respuesta recuerda revisar ingresos, gastos y deudas antes de considerar una obligación real. |
+| 2 | **Iniciemos con educación financiera** | Invita a la siguiente sesión a tomar un curso corto e interactivo antes de decidir sobre un primer crédito. No tener historial no significa carecer de conocimientos financieros; el nivel de educación financiera usado en este proyecto es un proxy derivado del historial. |
+
+La ruta depende del `cluster_id`; para el grupo 1, el cupo también depende del `flujo_mensual_disponible_cop` calculado por la API. `distancia_gower_al_medoid` indica proximidad descriptiva al medoide, no confianza o probabilidad. Para inspeccionar el resumen programáticamente, consultar `GET /v1/modelo`.

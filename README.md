@@ -58,14 +58,14 @@ Los resultados por repetición se guardan en `data/processed/estabilidad_gower_k
 
 ## API académica
 
-La API es una demostración sencilla para que el equipo y el profesor inspeccionen el modelo con perfiles sintéticos. No guarda las solicitudes ni devuelve recomendaciones, montos o aprobaciones de crédito.
+La API es una demostración sencilla para que el equipo y el profesor inspeccionen el modelo con perfiles sintéticos. Además del cluster y las variables calculadas, devuelve una ruta académica ilustrativa. Los cupos que aparecen son ficticios y la salida no es una oferta, aprobación ni evaluación de una solicitud real. La API no guarda las solicitudes.
 
 ```bash
 uv run python scripts/entrenar_modelo_api.py
 uv run uvicorn api.main:app --host 127.0.0.1 --port 8000
 ```
 
-Al iniciar, abre `http://127.0.0.1:8000/docs` para probar `POST /v1/clusterizar`. `GET /v1/modelo` muestra el método, sus parámetros y el resumen de los tres clusters. El esquema de entrada y la respuesta se describen en OpenAPI. La síntesis interpretativa está en [`docs/perfiles_clusters_api.md`](docs/perfiles_clusters_api.md). Ingresen únicamente datos sintéticos de prueba; la demo no está pensada para datos personales reales.
+Al iniciar, abre `http://127.0.0.1:8000/docs` para probar `POST /v1/clusterizar`. `GET /v1/modelo` muestra el método, sus parámetros y el resumen de los tres clusters. El esquema de entrada y la respuesta se describen en OpenAPI. La síntesis interpretativa y las reglas didácticas de las rutas están en [`docs/perfiles_clusters_api.md`](docs/perfiles_clusters_api.md). Ingresen únicamente datos sintéticos de prueba; la demo no está pensada para datos personales reales.
 
 ### Publicar en Render
 
