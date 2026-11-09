@@ -7,7 +7,7 @@ from typing import Literal
 
 import joblib
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Body, FastAPI, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from src.models.segmentacion import GowerKMedoidsPredictor
@@ -16,6 +16,32 @@ from src.pipeline.perfil_financiero import calcular_variables_derivadas
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT = ROOT / "models/gower_kmedoids_k3.joblib"
+EJEMPLO_PERFIL_SINTETICO = {
+    "edad": 34,
+    "tipo_hogar": "vive_con_familia",
+    "personas_hogar": 3,
+    "personas_a_cargo": 1,
+    "nivel_estudio": "universitario_en_curso",
+    "situacion_laboral": "estudia_y_trabaja",
+    "tipo_ingreso": "salario_fijo",
+    "ingreso_neto_mensual_cop": 1800000,
+    "tiene_vivienda_propia": 0,
+    "tiene_vehiculo": 0,
+    "gasto_vivienda_mensual_cop": 400000,
+    "gasto_alimentacion_mensual_cop": 450000,
+    "gasto_transporte_mensual_cop": 150000,
+    "gasto_salud_mensual_cop": 50000,
+    "gasto_educacion_mensual_cop": 200000,
+    "pago_servicios_publicos_cop": 120000,
+    "otros_gastos_esenciales_mensuales_cop": 100000,
+    "tipo_plan_celular": "prepago",
+    "experiencia_crediticia": "sin_experiencia",
+    "meses_historial_crediticio": 0,
+    "cuotas_deudas_vigentes_cop": 0,
+    "ahorro_disponible_cop": 200000,
+    "moras_ultimos_12_meses": 0,
+    "monto_solicitado_cop": 500000,
+}
 
 
 class PerfilEntrada(BaseModel):
@@ -148,7 +174,18 @@ def informacion_modelo(request: Request):
 
 
 @app.post("/v1/clusterizar", response_model=ResultadoCluster, tags=["Clusterización"])
-def clusterizar(perfil: PerfilEntrada, request: Request):
+def clusterizar(
+    request: Request,
+    perfil: PerfilEntrada = Body(
+        openapi_examples={
+            "perfil_sintetico": {
+                "summary": "Perfil sintético de ejemplo",
+                "description": "Ejemplo válido para probar la documentación interactiva.",
+                "value": EJEMPLO_PERFIL_SINTETICO,
+            }
+        }
+    ),
+):
     datos = perfil.model_dump()
     try:
         derivadas = calcular_variables_derivadas(datos)
