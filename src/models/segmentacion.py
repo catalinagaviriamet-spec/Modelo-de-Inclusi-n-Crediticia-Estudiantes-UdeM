@@ -153,35 +153,56 @@ def _gower(a_num, a_cat, b_num, b_cat, minimo, rangos):
     return distancia / n_features
 
 
-def _pam_muestreado(distancias, k, seed, swap_candidates=120, max_iter=8):
-    """PAM con búsqueda aleatoria acotada de swaps sobre una matriz pequeña."""
+def _pam_muestreado(
+    distancias,
+    k,
+    seed,
+    swap_candidates=None,
+    max_iter=50,
+    n_starts=20,
+):
+    """PAM mult inicio; prueba todos los swaps salvo que se limite candidatos."""
+    if n_starts < 1 or max_iter < 1:
+        raise ValueError("n_starts y max_iter deben ser al menos 1.")
     rng = np.random.default_rng(seed)
     n = len(distancias)
-    medoids = rng.choice(n, size=k, replace=False)
-    costo = np.min(distancias[:, medoids], axis=1).sum()
+    mejores_medoids = None
+    mejor_costo = np.inf
+    mejor_iteraciones = 0
 
-    for _ in range(max_iter):
-        no_medoids = np.setdiff1d(np.arange(n), medoids, assume_unique=False)
-        if len(no_medoids) > swap_candidates:
-            candidatos = rng.choice(no_medoids, size=swap_candidates, replace=False)
-        else:
-            candidatos = no_medoids
-        mejor_costo = costo
-        mejor_swap = None
-        for posicion in range(k):
-            otros = np.delete(medoids, posicion)
-            base = np.min(distancias[:, otros], axis=1)
-            costos = np.minimum(base[:, None], distancias[:, candidatos]).sum(axis=0)
-            idx = int(costos.argmin())
-            if costos[idx] < mejor_costo - 1e-8:
-                mejor_costo = float(costos[idx])
-                mejor_swap = (posicion, int(candidatos[idx]))
-        if mejor_swap is None:
-            break
-        medoids[mejor_swap[0]] = mejor_swap[1]
-        costo = mejor_costo
-    labels = np.argmin(distancias[:, medoids], axis=1)
-    return medoids, labels
+    for _ in range(n_starts):
+        medoids = rng.choice(n, size=k, replace=False)
+        costo = np.min(distancias[:, medoids], axis=1).sum()
+        iteraciones = 0
+
+        for iteraciones in range(1, max_iter + 1):
+            no_medoids = np.setdiff1d(np.arange(n), medoids, assume_unique=False)
+            if swap_candidates is not None and len(no_medoids) > swap_candidates:
+                candidatos = rng.choice(no_medoids, size=swap_candidates, replace=False)
+            else:
+                candidatos = no_medoids
+            mejor_costo_swap = costo
+            mejor_swap = None
+            for posicion in range(k):
+                otros = np.delete(medoids, posicion)
+                base = np.min(distancias[:, otros], axis=1)
+                costos = np.minimum(base[:, None], distancias[:, candidatos]).sum(axis=0)
+                idx = int(costos.argmin())
+                if costos[idx] < mejor_costo_swap - 1e-8:
+                    mejor_costo_swap = float(costos[idx])
+                    mejor_swap = (posicion, int(candidatos[idx]))
+            if mejor_swap is None:
+                break
+            medoids[mejor_swap[0]] = mejor_swap[1]
+            costo = mejor_costo_swap
+
+        if costo < mejor_costo:
+            mejores_medoids = medoids.copy()
+            mejor_costo = float(costo)
+            mejor_iteraciones = iteraciones
+
+    labels = np.argmin(distancias[:, mejores_medoids], axis=1)
+    return mejores_medoids, labels, mejor_costo, mejor_iteraciones
 
 
 def comparar_clusterizaciones(
@@ -190,6 +211,8 @@ def comparar_clusterizaciones(
     seed=42,
     gower_train_size=1800,
     evaluation_size=800,
+    pam_starts=20,
+    pam_max_iter=50,
 ):
     """Ajusta tres métodos y compara silhouette Gower en una evaluación común.
 
@@ -252,7 +275,10 @@ def comparar_clusterizaciones(
 
         # 3) PAM/K-Medoids con distancia Gower en muestra de entrenamiento.
         inicio = perf_counter()
-        medoids_locales, _ = _pam_muestreado(d_train_gower, k, seed + 100 + k)
+        medoids_locales, _, pam_cost, pam_iterations = _pam_muestreado(
+            d_train_gower, k, seed + 100 + k,
+            max_iter=pam_max_iter, n_starts=pam_starts,
+        )
         medoid_indices = gower_train_idx[medoids_locales]
         d_eval_medoids = _gower(
             gower_num[eval_idx], categoricas[eval_idx],
@@ -262,7 +288,14 @@ def comparar_clusterizaciones(
         tiempo = perf_counter() - inicio
         score = silhouette_score(gower_eval, eval_labels, metric="precomputed")
         key = ("Gower + K-Medoids (muestra)", k)
-        resultados.append(_fila_resultado(key[0], k, score, tiempo, eval_labels))
+        fila = _fila_resultado(key[0], k, score, tiempo, eval_labels)
+        fila.update({
+            "pam_objetivo_entrenamiento": pam_cost,
+            "pam_iteraciones_inicio_ganador": pam_iterations,
+            "pam_inicios": pam_starts,
+            "pam_max_iter": pam_max_iter,
+        })
+        resultados.append(fila)
         modelos[key] = (medoid_indices, gower_num, categoricas, minimo, rangos)
         d_all_medoids = _gower(
             gower_num, categoricas,
@@ -285,6 +318,8 @@ def analizar_estabilidad_gower_kmedoids(
     repeticiones=10,
     gower_train_size=1800,
     evaluation_size=800,
+    pam_starts=20,
+    pam_max_iter=50,
 ):
     """Compara asignaciones de Gower + K-Medoids bajo distintas muestras.
 
@@ -329,7 +364,10 @@ def analizar_estabilidad_gower_kmedoids(
     semilla_pam = seed + 100 + k
 
     def asignar(muestra, distancias, semilla_ajuste):
-        medoids_locales, _ = _pam_muestreado(distancias, k, semilla_ajuste)
+        medoids_locales, _, _, _ = _pam_muestreado(
+            distancias, k, semilla_ajuste,
+            max_iter=pam_max_iter, n_starts=pam_starts,
+        )
         medoids = muestra[medoids_locales]
         d_eval_medoids = _gower(
             gower_num[eval_idx], categoricas[eval_idx],

@@ -43,15 +43,15 @@ Para instalar las dependencias con Python 3.12 y ejecutar la comparación:
 
 ```bash
 uv sync
-uv run python scripts/entrenar_clusterizaciones.py --seed 42 --k-values 3,4,5,6
+uv run python scripts/entrenar_clusterizaciones.py --seed 42 --k-values 3,4,5,6 --pam-starts 20 --pam-max-iter 50
 ```
 
 El script compara K-Prototypes, One-Hot + K-Means y Gower + K-Medoids para varios valores de `k`, y guarda las métricas en `data/processed/comparacion_clusterizaciones.csv` y los perfiles etiquetados en `data/processed/perfiles_clusterizados.csv`. El mayor silhouette Gower observado es una referencia inicial, no una decisión automática de producto. K-Medoids se ajusta en una muestra de 1.800 perfiles por el coste de las distancias por pares y asigna después los demás perfiles al medoide más cercano.
 
-La decisión provisional de continuar con **Gower + K-Medoids, k=3**, su evidencia y sus limitaciones se documentan en [`docs/decision_clusterizacion.md`](docs/decision_clusterizacion.md). El siguiente análisis revisa la estabilidad de esa solución ante remuestreo:
+La decisión provisional de continuar con **Gower + K-Medoids, k=3**, su evidencia y sus limitaciones se documentan en [`docs/decision_clusterizacion.md`](docs/decision_clusterizacion.md). La búsqueda PAM usa 20 inicios, evalúa todos los swaps posibles y termina si converge o al llegar a 50 iteraciones. El análisis revisa la estabilidad ante remuestreo:
 
 ```bash
-uv run python scripts/analizar_estabilidad_cluster.py --seed 42 --repetitions 10
+uv run python scripts/analizar_estabilidad_cluster.py --seed 42 --repetitions 10 --pam-starts 20 --pam-max-iter 50
 ```
 
 Los resultados por repetición se guardan en `data/processed/estabilidad_gower_kmedoids_k3.csv`.

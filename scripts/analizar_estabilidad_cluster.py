@@ -18,6 +18,8 @@ def main() -> None:
     parser.add_argument("--repetitions", type=int, default=10)
     parser.add_argument("--gower-train-size", type=int, default=1800)
     parser.add_argument("--evaluation-size", type=int, default=800)
+    parser.add_argument("--pam-starts", type=int, default=20)
+    parser.add_argument("--pam-max-iter", type=int, default=50)
     parser.add_argument(
         "--input", type=Path,
         default=ROOT / "data/processed/perfiles_crediticios_procesados.csv",
@@ -34,6 +36,8 @@ def main() -> None:
         repeticiones=args.repetitions,
         gower_train_size=args.gower_train_size,
         evaluation_size=args.evaluation_size,
+        pam_starts=args.pam_starts,
+        pam_max_iter=args.pam_max_iter,
     )
     salida = ROOT / "data/processed/estabilidad_gower_kmedoids_k3.csv"
     salida.parent.mkdir(parents=True, exist_ok=True)
