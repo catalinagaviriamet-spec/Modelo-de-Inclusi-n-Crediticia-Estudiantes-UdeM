@@ -10,7 +10,7 @@ Proyecto de aprendizaje automático en la nube — Especialización en Ciencia d
 
 El proyecto explora cómo orientar a cada persona hacia educación financiera, un crédito pequeño con acompañamiento o un crédito de mayor monto según su perfil y capacidad de pago.
 
-Como punto de partida se creó una base de 30.000 perfiles financieros sintéticos, con edades de 18 a 74 años y el campo `rango_edad`. No contiene información de personas reales ni representa una muestra de estudiantes UdeM. Esta versión incluye variables de perfil; las métricas y rutas de atención se definirán más adelante. Ver [la ficha de datos, sus límites y el diccionario de campos](docs/datos_sinteticos.md).
+Como punto de partida se creó una base de 30.000 perfiles financieros sintéticos, con edades de 18 a 74 años y el campo `rango_edad`. No contiene información de personas reales ni representa una muestra de estudiantes UdeM. El proyecto explora clusters y rutas académicas ilustrativas; sus métricas y limitaciones están documentadas y no se deben interpretar como decisiones de crédito reales. Ver [la ficha de datos, sus límites y el diccionario de campos](docs/datos_sinteticos.md).
 
 Para regenerar el CSV con la semilla usada en la versión inicial:
 
@@ -72,6 +72,103 @@ Al iniciar, abre `http://127.0.0.1:8000/docs` para probar `POST /v1/clusterizar`
 La configuración `render.yaml` define un servicio web Docker gratuito que toma este repositorio como fuente y comprueba su estado en `/health`. Para desplegarlo, inicia sesión en Render, elige **New > Blueprint**, conecta este repositorio y confirma el servicio `modelo-inclusion-crediticia-api`. Una vez terminado el despliegue, abre `/docs` en la URL asignada por Render.
 
 **API pública:** <https://modelo-inclusion-crediticia-api.onrender.com> · [Documentación interactiva](https://modelo-inclusion-crediticia-api.onrender.com/docs) · [Estado](https://modelo-inclusion-crediticia-api.onrender.com/health). En `/docs`, usa **POST /v1/clusterizar → Try it out → Execute**; la ficha sintética de ejemplo ya viene cargada.
+
+#### Perfiles de ejemplo para la demostración
+
+En Swagger, abre **POST /v1/clusterizar**, pulsa **Try it out**, reemplaza el contenido del cuerpo por uno de estos perfiles y selecciona **Execute**. En la respuesta, revisa `cluster_id` y `recomendacion`.
+
+**Grupo 0 — Viabilidad estudio formal de crédito**
+
+```json
+{
+  "edad": 46,
+  "tipo_hogar": "vive_con_familia",
+  "personas_hogar": 3,
+  "personas_a_cargo": 0,
+  "nivel_estudio": "universitario_completo",
+  "situacion_laboral": "empleo_formal",
+  "tipo_ingreso": "salario_fijo",
+  "ingreso_neto_mensual_cop": 1222411,
+  "tiene_vivienda_propia": 1,
+  "tiene_vehiculo": 0,
+  "gasto_vivienda_mensual_cop": 246885,
+  "gasto_alimentacion_mensual_cop": 499587,
+  "gasto_transporte_mensual_cop": 366590,
+  "gasto_salud_mensual_cop": 27346,
+  "gasto_educacion_mensual_cop": 125197,
+  "pago_servicios_publicos_cop": 532475,
+  "otros_gastos_esenciales_mensuales_cop": 177036,
+  "tipo_plan_celular": "pospago",
+  "experiencia_crediticia": "credito_formal",
+  "meses_historial_crediticio": 118,
+  "cuotas_deudas_vigentes_cop": 550457,
+  "ahorro_disponible_cop": 2456903,
+  "moras_ultimos_12_meses": 0,
+  "monto_solicitado_cop": 3209459
+}
+```
+
+**Grupo 1 — Cuida tu historial crediticio** (flujo negativo; cupo simulado de $300.000 COP)
+
+```json
+{
+  "edad": 45,
+  "tipo_hogar": "otro",
+  "personas_hogar": 2,
+  "personas_a_cargo": 0,
+  "nivel_estudio": "universitario_en_curso",
+  "situacion_laboral": "estudia_y_trabaja",
+  "tipo_ingreso": "salario_fijo",
+  "ingreso_neto_mensual_cop": 967590,
+  "tiene_vivienda_propia": 0,
+  "tiene_vehiculo": 0,
+  "gasto_vivienda_mensual_cop": 1276605,
+  "gasto_alimentacion_mensual_cop": 520893,
+  "gasto_transporte_mensual_cop": 444023,
+  "gasto_salud_mensual_cop": 218938,
+  "gasto_educacion_mensual_cop": 327684,
+  "pago_servicios_publicos_cop": 151711,
+  "otros_gastos_esenciales_mensuales_cop": 296791,
+  "tipo_plan_celular": "prepago",
+  "experiencia_crediticia": "tarjeta_credito",
+  "meses_historial_crediticio": 121,
+  "cuotas_deudas_vigentes_cop": 300326,
+  "ahorro_disponible_cop": 3277018,
+  "moras_ultimos_12_meses": 2,
+  "monto_solicitado_cop": 1442447
+}
+```
+
+**Grupo 2 — Iniciemos con educación financiera**
+
+```json
+{
+  "edad": 34,
+  "tipo_hogar": "vive_con_familia",
+  "personas_hogar": 3,
+  "personas_a_cargo": 1,
+  "nivel_estudio": "universitario_en_curso",
+  "situacion_laboral": "estudia_y_trabaja",
+  "tipo_ingreso": "salario_fijo",
+  "ingreso_neto_mensual_cop": 1800000,
+  "tiene_vivienda_propia": 0,
+  "tiene_vehiculo": 0,
+  "gasto_vivienda_mensual_cop": 400000,
+  "gasto_alimentacion_mensual_cop": 450000,
+  "gasto_transporte_mensual_cop": 150000,
+  "gasto_salud_mensual_cop": 50000,
+  "gasto_educacion_mensual_cop": 200000,
+  "pago_servicios_publicos_cop": 120000,
+  "otros_gastos_esenciales_mensuales_cop": 100000,
+  "tipo_plan_celular": "prepago",
+  "experiencia_crediticia": "sin_experiencia",
+  "meses_historial_crediticio": 0,
+  "cuotas_deudas_vigentes_cop": 0,
+  "ahorro_disponible_cop": 200000,
+  "moras_ultimos_12_meses": 0,
+  "monto_solicitado_cop": 500000
+}
+```
 
 El servicio gratuito se duerme tras 15 minutos sin tráfico y puede tardar alrededor de un minuto o más en responder al primer acceso. Es una opción para la demostración académica; no se ofrece como servicio de producción. El contenedor incluye la API, el código del modelo y su artefacto, no los CSV. Usa únicamente perfiles sintéticos.
 
