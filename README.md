@@ -66,3 +66,13 @@ uv run uvicorn api.main:app --host 127.0.0.1 --port 8000
 ```
 
 Al iniciar, abre `http://127.0.0.1:8000/docs` para probar `POST /v1/clusterizar`. `GET /v1/modelo` muestra el método, sus parámetros y el resumen de los tres clusters. El esquema de entrada y la respuesta se describen en OpenAPI. La síntesis interpretativa está en [`docs/perfiles_clusters_api.md`](docs/perfiles_clusters_api.md). Ingresen únicamente datos sintéticos de prueba; la demo no está pensada para datos personales reales.
+
+### Publicar en Hugging Face Spaces
+
+El Space usa Docker y expone la API en el puerto 7860. Los archivos de despliegue están en `deploy/huggingface/`. Después de crear un Space nuevo con SDK **Docker**, prepara su carpeta clonada así:
+
+```bash
+uv run python scripts/preparar_space.py RUTA_A_LA_CARPETA_CLONADA_DEL_SPACE
+```
+
+Luego confirma y sube esos archivos al repositorio del Space. Esta preparación incluye solo la API, el código requerido y el artefacto del modelo; excluye los CSV de datos. Una vez desplegado, `/docs` muestra la documentación interactiva. Hugging Face Spaces Docker requiere un plan que habilite cómputo para Spaces.
