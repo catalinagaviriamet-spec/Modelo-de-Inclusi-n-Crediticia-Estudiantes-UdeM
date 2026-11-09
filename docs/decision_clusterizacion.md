@@ -50,7 +50,20 @@ Con un conjunto de evaluación fijo de 800 perfiles y muestras de entrenamiento 
 
 La búsqueda reforzada eliminó la variación de inicialización en esta evaluación: los 20 inicios produjeron la misma partición para una muestra fija (ARI 1,000). Sin embargo, al cambiar la muestra, el ARI promedio sigue bajo, **0,260**. El silhouette Gower promedio fue **0,089** (rango **0,057–0,110**). Así que la búsqueda ya es consistente respecto a la inicialización, pero la pertenencia de las personas a cada cluster sigue siendo sensible a la muestra. Gower + K-Medoids, k=3 permanece como **candidato de exploración**, no elección final.
 
-El siguiente paso será repetir con muestras de entrenamiento más grandes (por ejemplo, 3.000) y comprobar si la estabilidad mejora. Si persiste la variación, revisar las variables/datos sintéticos o reconsiderar la segmentación antes de asignar nombres a los grupos.
+Se probó una muestra de entrenamiento mayor de 3.000 perfiles para comprobar si mejoraban el ajuste y la estabilidad. La evidencia no justificó dejarla como configuración predeterminada; se conserva el experimento por separado y el próximo paso es revisar la definición de variables y el diseño de los datos sintéticos antes de nombrar los grupos.
+
+### Sensibilidad al tamaño de la muestra de ajuste
+
+La base sigue teniendo 30.000 registros. Solo se cambió cuántos perfiles participan en el ajuste Gower + K-Medoids; en ambas corridas se mantuvo la misma evaluación de 800 perfiles y los mismos parámetros PAM (20 inicios y hasta 50 iteraciones).
+
+| Muestra para PAM | Silhouette Gower, k=3 | Tiempo de ajuste, k=3 | ARI medio por cambio de muestra | ARI medio por inicialización |
+|---:|---:|---:|---:|---:|
+| 1.800 | 0,112973 | 3,4 s | 0,260 (10 corridas) | 1,000 (10 corridas) |
+| 3.000 | 0,091632 | 24,0 s | 0,154 (5 corridas) | 0,657 (5 corridas) |
+
+En la corrida de 3.000, One-Hot + K-Means, k=4 quedó primero con silhouette 0,112625. Así que usar más perfiles en el ajuste no mejoró la separación de Gower + K-Medoids y sí elevó el tiempo de forma marcada. Las corridas de estabilidad tuvieron distinto número de repeticiones, por lo que sus ARI son indicativos, no una comparación inferencial. Se conserva **1.800** como tamaño de ajuste predeterminado para este candidato y la opción de 3.000 queda documentada como análisis de sensibilidad.
+
+Los artefactos de 3.000 están en [`comparacion_clusterizaciones_train3000.csv`](../data/processed/comparacion_clusterizaciones_train3000.csv) y [`estabilidad_gower_kmedoids_k3_train3000.csv`](../data/processed/estabilidad_gower_kmedoids_k3_train3000.csv).
 
 ## Artefactos relacionados
 

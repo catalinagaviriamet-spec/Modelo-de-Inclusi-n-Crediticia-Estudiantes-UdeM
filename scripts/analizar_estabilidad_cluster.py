@@ -39,7 +39,8 @@ def main() -> None:
         pam_starts=args.pam_starts,
         pam_max_iter=args.pam_max_iter,
     )
-    salida = ROOT / "data/processed/estabilidad_gower_kmedoids_k3.csv"
+    sufijo_muestra = "" if args.gower_train_size == 1800 else f"_train{args.gower_train_size}"
+    salida = ROOT / f"data/processed/estabilidad_gower_kmedoids_k3{sufijo_muestra}.csv"
     salida.parent.mkdir(parents=True, exist_ok=True)
     resultados.to_csv(salida, index=False, encoding="utf-8-sig")
     print("Resultados por repetición:")

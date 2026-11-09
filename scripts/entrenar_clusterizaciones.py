@@ -54,8 +54,9 @@ def main() -> None:
 
     salida = ROOT / "data/processed"
     salida.mkdir(parents=True, exist_ok=True)
-    metricas_path = salida / "comparacion_clusterizaciones.csv"
-    perfiles_path = salida / "perfiles_clusterizados.csv"
+    sufijo_muestra = "" if args.gower_train_size == 1800 else f"_train{args.gower_train_size}"
+    metricas_path = salida / f"comparacion_clusterizaciones{sufijo_muestra}.csv"
+    perfiles_path = salida / f"perfiles_clusterizados{sufijo_muestra}.csv"
     metricas.to_csv(metricas_path, index=False, encoding="utf-8-sig")
     resultado = perfiles.copy()
     resultado["cluster"] = etiquetas.to_numpy()

@@ -18,6 +18,8 @@ __pycache__/
 !/data/processed/comparacion_clusterizaciones.csv
 !/data/processed/perfiles_clusterizados.csv
 !/data/processed/estabilidad_gower_kmedoids_k3.csv
+!/data/processed/comparacion_clusterizaciones_train3000.csv
+!/data/processed/estabilidad_gower_kmedoids_k3_train3000.csv
 /models/*
 !/models/.gitkeep
 /logs/*
