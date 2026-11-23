@@ -30,10 +30,20 @@ def main() -> None:
         reader = csv.DictReader(source)
         if reader.fieldnames is None:
             parser.error(f"El archivo de entrada no tiene encabezados: {args.input}")
-        output_fields = list(reader.fieldnames) + [
+        campos_derivados = [
             "nivel_educacion_financiera",
             "gastos_esenciales_mensuales_cop",
             "flujo_mensual_disponible_cop",
+            "ratio_deuda_ingreso",
+            "ratio_gastos_ingreso",
+            "ingreso_per_capita_cop",
+            "cobertura_ahorro_meses",
+            "capacidad_cuota_referencial_cop",
+            "nivel_experiencia_crediticia_proxy",
+            "segmento_generador",
+        ]
+        output_fields = list(reader.fieldnames) + [
+            campo for campo in campos_derivados if campo not in reader.fieldnames
         ]
         with args.output.open("w", newline="", encoding="utf-8-sig") as destination:
             writer = csv.DictWriter(destination, fieldnames=output_fields)

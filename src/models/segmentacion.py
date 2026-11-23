@@ -34,25 +34,49 @@ CATEGORICAS = [
     "tipo_plan_celular",
     "experiencia_crediticia",
 ]
+CATEGORICAS_BASE_FINAL = [
+    "tipo_hogar",
+    "situacion_laboral",
+    "tipo_ingreso",
+    "tiene_vivienda_propia",
+    "tiene_vehiculo",
+    "experiencia_crediticia",
+]
+NUMERICAS_BASE_FINAL = [
+    "edad", "personas_hogar", "personas_a_cargo", "ingreso_per_capita_cop",
+    "ratio_gastos_ingreso", "ratio_deuda_ingreso", "cobertura_ahorro_meses",
+    "meses_historial_crediticio", "moras_ultimos_12_meses", "monto_solicitado_cop",
+]
 MONTOS = [
     "ingreso_neto_mensual_cop",
     "gastos_esenciales_mensuales_cop",
     "cuotas_deudas_vigentes_cop",
     "ahorro_disponible_cop",
     "monto_solicitado_cop",
+    "ingreso_per_capita_cop",
 ]
 
 
-def _seleccionar(df: pd.DataFrame):
-    faltan = sorted(set(NUMERICAS + CATEGORICAS) - set(df.columns))
+def _seleccionar(
+    df: pd.DataFrame,
+    columnas_categoricas=None,
+    columnas_numericas=None,
+    imputar_faltantes=True,
+):
+    categoricas_configuradas = CATEGORICAS if columnas_categoricas is None else list(columnas_categoricas)
+    numericas_configuradas = NUMERICAS if columnas_numericas is None else list(columnas_numericas)
+    faltan = sorted(set(numericas_configuradas + categoricas_configuradas) - set(df.columns))
     if faltan:
         raise ValueError(f"Faltan campos requeridos para clusterizar: {faltan}")
-    numericas = df[NUMERICAS].astype(float).copy()
+    numericas = df[numericas_configuradas].astype(float).copy()
     for columna in MONTOS:
-        numericas[columna] = np.log1p(numericas[columna].clip(lower=0))
+        if columna in numericas.columns:
+            numericas[columna] = np.log1p(numericas[columna].clip(lower=0))
     numericas = numericas.replace([np.inf, -np.inf], np.nan)
-    numericas = numericas.fillna(numericas.median()).to_numpy(dtype=np.float64)
-    categoricas = df[CATEGORICAS].fillna("sin_dato").astype(str).to_numpy(dtype=object)
+    if imputar_faltantes:
+        numericas = numericas.fillna(numericas.median())
+    numericas = numericas.to_numpy(dtype=np.float64)
+    categoricas = df[categoricas_configuradas].fillna("sin_dato").astype(str).to_numpy(dtype=object)
     return numericas, categoricas
 
 
@@ -136,21 +160,33 @@ def _fit_kmeans_mixto(numericas, categoricas, k, seed):
 def _preparar_gower(numericas, train_indices):
     """Calcula rangos de entrenamiento; los montos ya están en log1p."""
     x = numericas.copy()
-    minimo = x[train_indices].min(axis=0)
-    maximo = x[train_indices].max(axis=0)
+    minimo = np.nanmin(x[train_indices], axis=0)
+    maximo = np.nanmax(x[train_indices], axis=0)
     rangos = np.where(maximo > minimo, maximo - minimo, 1.0)
     return x, minimo, rangos
 
 
-def _gower(a_num, a_cat, b_num, b_cat, minimo, rangos):
+def _gower(a_num, a_cat, b_num, b_cat, minimo, rangos, feature_weights=None):
     n_features = a_num.shape[1] + a_cat.shape[1]
+    pesos = (
+        np.ones(n_features, dtype=np.float32)
+        if feature_weights is None
+        else np.asarray(feature_weights, dtype=np.float32)
+    )
+    if pesos.shape != (n_features,) or np.any(~np.isfinite(pesos)) or np.any(pesos <= 0):
+        raise ValueError("feature_weights debe tener un peso positivo por variable.")
     distancia = np.zeros((len(a_num), len(b_num)), dtype=np.float32)
+    comparables = np.zeros_like(distancia)
     for j in range(a_num.shape[1]):
         diferencia = np.abs(a_num[:, None, j] - b_num[None, :, j]) / rangos[j]
-        distancia += np.minimum(diferencia, 1.0).astype(np.float32)
+        valido = np.isfinite(diferencia)
+        distancia += np.where(valido, np.minimum(diferencia, 1.0) * pesos[j], 0.0).astype(np.float32)
+        comparables += valido * pesos[j]
     for j in range(a_cat.shape[1]):
-        distancia += (a_cat[:, None, j] != b_cat[None, :, j]).astype(np.float32)
-    return distancia / n_features
+        peso = pesos[a_num.shape[1] + j]
+        distancia += (a_cat[:, None, j] != b_cat[None, :, j]).astype(np.float32) * peso
+        comparables += peso
+    return np.divide(distancia, comparables, out=np.zeros_like(distancia), where=comparables > 0)
 
 
 def _pam_muestreado(
@@ -220,9 +256,22 @@ class GowerKMedoidsPredictor:
     max_iter: int
     cluster_profiles: list[dict]
     dataset_size: int = 0
+    columnas_numericas: tuple[str, ...] = tuple(NUMERICAS)
+    columnas_categoricas: tuple[str, ...] = tuple(CATEGORICAS)
+    winsor99_limits: dict[str, float] | None = None
 
     def predict(self, df: pd.DataFrame):
-        numericas, categoricas = _seleccionar(df)
+        numericas, categoricas = _seleccionar(
+            df, self.columnas_categoricas, self.columnas_numericas,
+            imputar_faltantes=False,
+        )
+        numericas = numericas.copy()
+        if self.winsor99_limits:
+            for j, columna in enumerate(self.columnas_numericas):
+                if columna in self.winsor99_limits:
+                    numericas[:, j] = np.log1p(np.minimum(
+                        np.clip(numericas[:, j], 0, None), self.winsor99_limits[columna]
+                    ))
         distancias = _gower(
             numericas, categoricas,
             self.medoids_num, self.medoids_cat,
@@ -269,13 +318,35 @@ def ajustar_gower_kmedoids(
     train_sample_size=1800,
     n_starts=20,
     max_iter=50,
+    columnas_categoricas=None,
+    columnas_numericas=None,
+    transformacion_relativas="none",
 ) -> GowerKMedoidsPredictor:
     """Ajusta medoids Gower en una muestra y crea predictor serializable."""
-    numericas, categoricas = _seleccionar(df)
+    columnas_categoricas = tuple(columnas_categoricas or CATEGORICAS)
+    columnas_numericas = tuple(columnas_numericas or NUMERICAS)
+    numericas, categoricas = _seleccionar(
+        df, columnas_categoricas, columnas_numericas, imputar_faltantes=False
+    )
+    numericas = numericas.copy()
     if len(df) < max(train_sample_size, k):
         raise ValueError("No hay suficientes perfiles para el tamaño de ajuste elegido.")
     rng = np.random.default_rng(seed)
     sample_indices = rng.choice(len(df), size=train_sample_size, replace=False)
+    winsor99_limits = {}
+    if transformacion_relativas not in {"none", "log1p", "winsor99_log1p"}:
+        raise ValueError("transformacion_relativas debe ser none, log1p o winsor99_log1p.")
+    if transformacion_relativas != "none":
+        relativas = {"ratio_deuda_ingreso", "ratio_gastos_ingreso", "cobertura_ahorro_meses"}
+        for j, columna in enumerate(columnas_numericas):
+            if columna not in relativas:
+                continue
+            valores = numericas[:, j]
+            if transformacion_relativas == "winsor99_log1p":
+                limite = float(np.nanquantile(valores[sample_indices], 0.99))
+                winsor99_limits[columna] = limite
+                valores = np.minimum(valores, limite)
+            numericas[:, j] = np.log1p(np.clip(valores, 0, None))
     _, minimo, rangos = _preparar_gower(numericas, sample_indices)
     train_num = numericas[sample_indices]
     train_cat = categoricas[sample_indices]
@@ -297,9 +368,16 @@ def ajustar_gower_kmedoids(
         n_starts=n_starts,
         max_iter=max_iter,
         cluster_profiles=[],
+        columnas_numericas=columnas_numericas,
+        columnas_categoricas=columnas_categoricas,
+        winsor99_limits=winsor99_limits or None,
     )
     labels, _ = predictor.predict(df)
     predictor.cluster_profiles = _resumir_clusters(df, labels)
+    predictor.medoid_profile_ids = (
+        df.iloc[medoids_globales]["id_persona"].astype(str).tolist()
+        if "id_persona" in df.columns else []
+    )
     return predictor
 
 
@@ -311,6 +389,10 @@ def comparar_clusterizaciones(
     evaluation_size=800,
     pam_starts=20,
     pam_max_iter=50,
+    columnas_categoricas=None,
+    columnas_numericas=None,
+    transformacion_relativas="none",
+    estrategia_faltantes="mediana",
 ):
     """Ajusta tres métodos y compara silhouette Gower en una evaluación común.
 
@@ -318,7 +400,14 @@ def comparar_clusterizaciones(
     común de evaluación. Gower + PAM usa una muestra acotada por su coste
     cuadrático. Todos se evalúan sobre los mismos perfiles con distancia Gower.
     """
-    numericas, categoricas = _seleccionar(df)
+    numericas, categoricas = _seleccionar(df, columnas_categoricas, columnas_numericas)
+    if estrategia_faltantes not in {"mediana", "pairwise"}:
+        raise ValueError("estrategia_faltantes debe ser mediana o pairwise.")
+    numericas_gower = numericas.copy()
+    if estrategia_faltantes == "pairwise":
+        numericas_gower, _ = _seleccionar(
+            df, columnas_categoricas, columnas_numericas, imputar_faltantes=False
+        )
     n = len(df)
     if n < max(gower_train_size + evaluation_size, 100):
         raise ValueError("La base es demasiado pequeña para los tamaños de muestra elegidos.")
@@ -330,8 +419,27 @@ def comparar_clusterizaciones(
     if len(train_idx) < max(k_values):
         raise ValueError("No hay suficientes filas para ajustar los k indicados.")
 
+    if transformacion_relativas not in {"none", "log1p", "winsor99_log1p"}:
+        raise ValueError("transformacion_relativas debe ser none, log1p o winsor99_log1p.")
+    columnas_relativas = {
+        "ratio_deuda_ingreso",
+        "ratio_gastos_ingreso",
+        "cobertura_ahorro_meses",
+    }
+    for j, columna in enumerate(columnas_numericas or NUMERICAS):
+        if columna not in columnas_relativas or transformacion_relativas == "none":
+            continue
+        valores = numericas[:, j]
+        valores_gower = numericas_gower[:, j]
+        if transformacion_relativas == "winsor99_log1p":
+            limite = np.nanquantile(valores_gower[train_idx], 0.99)
+            valores = np.minimum(valores, limite)
+            valores_gower = np.minimum(valores_gower, limite)
+        numericas[:, j] = np.log1p(np.clip(valores, 0, None))
+        numericas_gower[:, j] = np.log1p(np.clip(valores_gower, 0, None))
+
     # Transformación común de valores monetarios para la distancia Gower.
-    gower_num, minimo, rangos = _preparar_gower(numericas, train_idx)
+    gower_num, minimo, rangos = _preparar_gower(numericas_gower, train_idx)
     gower_eval = _gower(
         gower_num[eval_idx], categoricas[eval_idx],
         gower_num[eval_idx], categoricas[eval_idx], minimo, rangos,

@@ -9,7 +9,11 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.models.segmentacion import ajustar_gower_kmedoids  # noqa: E402
+from src.models.segmentacion import (  # noqa: E402
+    CATEGORICAS_BASE_FINAL,
+    NUMERICAS_BASE_FINAL,
+    ajustar_gower_kmedoids,
+)
 from src.pipeline.perfil_financiero import calcular_variables_derivadas  # noqa: E402
 
 
@@ -33,8 +37,26 @@ def main() -> None:
         train_sample_size=1800,
         n_starts=20,
         max_iter=50,
+        columnas_numericas=NUMERICAS_BASE_FINAL,
+        columnas_categoricas=CATEGORICAS_BASE_FINAL,
+        transformacion_relativas="winsor99_log1p",
     )
     modelo.dataset_size = len(perfiles)
+    por_cluster = {p["cluster_id"]: p["medianas"] for p in modelo.cluster_profiles}
+    educacion = min(por_cluster, key=lambda c: por_cluster[c]["meses_historial_crediticio"])
+    viabilidad = max(
+        (c for c in por_cluster if c != educacion),
+        key=lambda c: (
+            por_cluster[c]["meses_historial_crediticio"],
+            por_cluster[c]["flujo_mensual_disponible_cop"],
+        ),
+    )
+    cuidar = next(c for c in por_cluster if c not in {educacion, viabilidad})
+    modelo.cluster_routes = {
+        str(educacion): "educacion_financiera",
+        str(viabilidad): "viabilidad_formal",
+        str(cuidar): "cuidar_historial",
+    }
     salida = ROOT / "models/gower_kmedoids_k3.joblib"
     salida.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(modelo, salida)

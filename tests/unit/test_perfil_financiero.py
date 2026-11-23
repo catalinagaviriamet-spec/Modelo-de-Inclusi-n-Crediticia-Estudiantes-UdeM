@@ -7,6 +7,7 @@ from src.pipeline.perfil_financiero import calcular_variables_derivadas
 class CalculoVariablesDerivadasTests(unittest.TestCase):
     def perfil_base(self):
         return {
+            "personas_hogar": 1,
             "ingreso_neto_mensual_cop": 1_000_000,
             "gasto_vivienda_mensual_cop": 0,
             "gasto_alimentacion_mensual_cop": 0,
@@ -16,6 +17,7 @@ class CalculoVariablesDerivadasTests(unittest.TestCase):
             "pago_servicios_publicos_cop": 0,
             "otros_gastos_esenciales_mensuales_cop": 0,
             "cuotas_deudas_vigentes_cop": 0,
+            "ahorro_disponible_cop": 0,
             "experiencia_crediticia": "sin_experiencia",
             "meses_historial_crediticio": 0,
             "moras_ultimos_12_meses": 0,

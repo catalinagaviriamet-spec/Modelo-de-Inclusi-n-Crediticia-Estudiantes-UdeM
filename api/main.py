@@ -21,7 +21,6 @@ EJEMPLO_PERFIL_SINTETICO = {
     "tipo_hogar": "vive_con_familia",
     "personas_hogar": 3,
     "personas_a_cargo": 1,
-    "nivel_estudio": "universitario_en_curso",
     "situacion_laboral": "estudia_y_trabaja",
     "tipo_ingreso": "salario_fijo",
     "ingreso_neto_mensual_cop": 1800000,
@@ -34,13 +33,71 @@ EJEMPLO_PERFIL_SINTETICO = {
     "gasto_educacion_mensual_cop": 200000,
     "pago_servicios_publicos_cop": 120000,
     "otros_gastos_esenciales_mensuales_cop": 100000,
-    "tipo_plan_celular": "prepago",
     "experiencia_crediticia": "sin_experiencia",
     "meses_historial_crediticio": 0,
     "cuotas_deudas_vigentes_cop": 0,
     "ahorro_disponible_cop": 200000,
     "moras_ultimos_12_meses": 0,
     "monto_solicitado_cop": 500000,
+}
+EJEMPLOS_PERFILES_BASE_FINAL = {
+    "viabilidad_formal": {
+        "summary": "Cluster 0 — Viabilidad estudio formal de crédito",
+        "description": "Perfil medoid sintético de la base final; el flujo es positivo.",
+        "value": {
+            "edad": 46, "tipo_hogar": "vive_con_familia", "personas_hogar": 3,
+            "personas_a_cargo": 1, "situacion_laboral": "empleo_formal",
+            "tipo_ingreso": "salario_fijo", "ingreso_neto_mensual_cop": 6752949,
+            "tiene_vivienda_propia": 1, "tiene_vehiculo": 0,
+            "gasto_vivienda_mensual_cop": 610533,
+            "gasto_alimentacion_mensual_cop": 1206861,
+            "gasto_transporte_mensual_cop": 157402,
+            "gasto_salud_mensual_cop": 137919, "gasto_educacion_mensual_cop": 242275,
+            "pago_servicios_publicos_cop": 514266,
+            "otros_gastos_esenciales_mensuales_cop": 2,
+            "experiencia_crediticia": "credito_formal", "meses_historial_crediticio": 186,
+            "cuotas_deudas_vigentes_cop": 465184, "ahorro_disponible_cop": 17100433,
+            "moras_ultimos_12_meses": 0, "monto_solicitado_cop": 5560221,
+        },
+    },
+    "cuidar_historial": {
+        "summary": "Cluster 1 — Cuida tu historial crediticio",
+        "description": "Perfil medoid sintético de la base final; el flujo es negativo.",
+        "value": {
+            "edad": 35, "tipo_hogar": "vive_con_pareja", "personas_hogar": 3,
+            "personas_a_cargo": 1, "situacion_laboral": "independiente",
+            "tipo_ingreso": "informal", "ingreso_neto_mensual_cop": 1132049,
+            "tiene_vivienda_propia": 0, "tiene_vehiculo": 0,
+            "gasto_vivienda_mensual_cop": 457754,
+            "gasto_alimentacion_mensual_cop": 171053,
+            "gasto_transporte_mensual_cop": 122948,
+            "gasto_salud_mensual_cop": 73219, "gasto_educacion_mensual_cop": 0,
+            "pago_servicios_publicos_cop": 128446,
+            "otros_gastos_esenciales_mensuales_cop": 34311,
+            "experiencia_crediticia": "microcredito", "meses_historial_crediticio": 33,
+            "cuotas_deudas_vigentes_cop": 611806, "ahorro_disponible_cop": 156554,
+            "moras_ultimos_12_meses": 1, "monto_solicitado_cop": 620832,
+        },
+    },
+    "educacion_financiera": {
+        "summary": "Cluster 2 — Iniciemos con educación financiera",
+        "description": "Perfil medoid sintético de la base final, sin historial crediticio.",
+        "value": {
+            "edad": 31, "tipo_hogar": "vive_con_familia", "personas_hogar": 3,
+            "personas_a_cargo": 0, "situacion_laboral": "estudia",
+            "tipo_ingreso": "apoyo_familiar", "ingreso_neto_mensual_cop": 1151915,
+            "tiene_vivienda_propia": 0, "tiene_vehiculo": 0,
+            "gasto_vivienda_mensual_cop": 9087,
+            "gasto_alimentacion_mensual_cop": 115962,
+            "gasto_transporte_mensual_cop": 176946, "gasto_salud_mensual_cop": 1,
+            "gasto_educacion_mensual_cop": 145552,
+            "pago_servicios_publicos_cop": 220053,
+            "otros_gastos_esenciales_mensuales_cop": 56956,
+            "experiencia_crediticia": "sin_experiencia", "meses_historial_crediticio": 0,
+            "cuotas_deudas_vigentes_cop": 0, "ahorro_disponible_cop": 396846,
+            "moras_ultimos_12_meses": 0, "monto_solicitado_cop": 645324,
+        },
+    },
 }
 
 
@@ -50,18 +107,11 @@ class PerfilEntrada(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     edad: int = Field(ge=18, le=74, description="Edad entre 18 y 74 años.")
-    tipo_hogar: Literal[
-        "vive_solo", "comparte_vivienda", "vive_con_familia", "vive_con_pareja", "otro"
-    ]
+    tipo_hogar: Literal["vive_solo", "comparte_vivienda", "vive_con_familia", "vive_con_pareja"]
     personas_hogar: int = Field(ge=1, le=7)
     personas_a_cargo: int = Field(ge=0, le=5)
-    nivel_estudio: Literal[
-        "secundaria", "tecnico_tecnologico", "universitario_en_curso",
-        "universitario_completo", "posgrado",
-    ]
     situacion_laboral: Literal[
-        "estudia", "empleo_formal", "empleo_informal", "independiente",
-        "desempleado", "estudia_y_trabaja",
+        "estudia", "empleo_formal", "empleo_informal", "independiente", "estudia_y_trabaja",
     ]
     tipo_ingreso: Literal[
         "sin_ingresos", "salario_fijo", "ingreso_variable", "informal", "apoyo_familiar"
@@ -76,7 +126,6 @@ class PerfilEntrada(BaseModel):
     gasto_educacion_mensual_cop: int = Field(ge=0, le=100_000_000)
     pago_servicios_publicos_cop: int = Field(ge=0, le=100_000_000)
     otros_gastos_esenciales_mensuales_cop: int = Field(ge=0, le=100_000_000)
-    tipo_plan_celular: Literal["sin_linea", "prepago", "pospago"]
     experiencia_crediticia: Literal[
         "sin_experiencia", "credito_formal", "credito_informal",
         "tarjeta_credito", "microcredito",
@@ -102,6 +151,13 @@ class VariablesDerivadas(BaseModel):
     nivel_educacion_financiera: str
     gastos_esenciales_mensuales_cop: int
     flujo_mensual_disponible_cop: int
+    ratio_deuda_ingreso: float | None
+    ratio_gastos_ingreso: float | None
+    ingreso_per_capita_cop: int
+    cobertura_ahorro_meses: float | None
+    capacidad_cuota_referencial_cop: int
+    nivel_experiencia_crediticia_proxy: str
+    segmento_generador: str
 
 
 class RecomendacionAcademica(BaseModel):
@@ -121,9 +177,9 @@ class ResultadoCluster(BaseModel):
     nota: str
 
 
-def construir_recomendacion(cluster_id: int, flujo_disponible: int) -> RecomendacionAcademica:
+def construir_recomendacion(ruta: str, flujo_disponible: int) -> RecomendacionAcademica:
     """Construye una ruta demostrativa; no representa una decisión crediticia real."""
-    if cluster_id == 0:
+    if ruta == "viabilidad_formal":
         fundamento = (
             "El perfil quedó en el grupo exploratorio asociado a experiencia crediticia. "
             "El flujo disponible es positivo." if flujo_disponible > 0 else
@@ -143,7 +199,7 @@ def construir_recomendacion(cluster_id: int, flujo_disponible: int) -> Recomenda
                 "que el crédito sea viable, esté preaprobado o vaya a ser otorgado."
             ),
         )
-    if cluster_id == 1:
+    if ruta == "cuidar_historial":
         cupo = 500_000 if flujo_disponible > 0 else 300_000
         cupo_formateado = f"{cupo:,}".replace(",", ".")
         if flujo_disponible > 0:
@@ -204,7 +260,7 @@ app = FastAPI(
         "derivadas, asigna un cluster exploratorio y presenta una ruta académica simulada. "
         "No evalúa solicitudes reales ni aprueba créditos."
     ),
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
@@ -228,7 +284,7 @@ def informacion_modelo(request: Request):
     modelo: GowerKMedoidsPredictor = request.app.state.modelo
     return {
         "nombre": "Gower + K-Medoids",
-        "version": "0.1.0-academica",
+        "version": "0.2.0-academica",
         "k": modelo.k,
         "tamano_muestra_ajuste": modelo.train_sample_size,
         "inicios_pam": modelo.n_starts,
@@ -236,11 +292,18 @@ def informacion_modelo(request: Request):
         "semilla": modelo.seed,
         "perfiles_en_base_sintetica": modelo.dataset_size,
         "clusters": modelo.cluster_profiles,
+        "variables_numericas": list(modelo.columnas_numericas),
+        "variables_categoricas": list(modelo.columnas_categoricas),
+        "mapa_rutas_por_cluster": modelo.cluster_routes,
         "evidencia_seleccion": {
-            "silhouette_gower_candidato_1800": 0.112973,
-            "alternativa_muy_cercana": "One-Hot + K-Means (k=4): 0.112625",
-            "ari_promedio_referencial_10_corridas": 0.260,
-            "nota": "Métricas de evaluación comparativa; no son probabilidades ni garantías del perfil consultado.",
+            "silhouette_gower": 0.413112,
+            "k": 3,
+            "comparacion_candidatos": {
+                "K-Prototypes": 0.416542,
+                "One-Hot + K-Means": 0.416542,
+                "Gower + K-Medoids": 0.413112,
+            },
+            "nota": "Métricas de evaluación comparativa en datos sintéticos; no son probabilidades ni garantías del perfil consultado.",
         },
         "limitacion": (
             "Las etiquetas describen grupos exploratorios de una base sintética; "
@@ -254,13 +317,7 @@ def informacion_modelo(request: Request):
 def clusterizar(
     request: Request,
     perfil: PerfilEntrada = Body(
-        openapi_examples={
-            "perfil_sintetico": {
-                "summary": "Perfil sintético de ejemplo",
-                "description": "Ejemplo válido para probar la documentación interactiva.",
-                "value": EJEMPLO_PERFIL_SINTETICO,
-            }
-        }
+        openapi_examples=EJEMPLOS_PERFILES_BASE_FINAL
     ),
 ):
     datos = perfil.model_dump()
@@ -273,12 +330,13 @@ def clusterizar(
     modelo: GowerKMedoidsPredictor = request.app.state.modelo
     etiquetas, distancias = modelo.predict(pd.DataFrame([fila]))
     cluster_id = int(etiquetas[0])
+    ruta = modelo.cluster_routes[str(cluster_id)]
     return ResultadoCluster(
         cluster_id=cluster_id,
         distancia_gower_al_medoid=round(float(distancias[0]), 4),
         variables_derivadas=derivadas,
         recomendacion=construir_recomendacion(
-            cluster_id, derivadas["flujo_mensual_disponible_cop"]
+            ruta, derivadas["flujo_mensual_disponible_cop"]
         ),
         nota=(
             "Resultado académico con datos sintéticos. La ruta y, cuando aplica, el cupo "

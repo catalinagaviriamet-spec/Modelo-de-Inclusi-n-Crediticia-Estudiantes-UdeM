@@ -1,27 +1,25 @@
-# Síntesis académica de los clusters
+# Perfiles Gower de la base final y correspondencia de rutas
 
-La API usa un ajuste final de **Gower + K-Medoids, k=3**, con 20 inicios PAM, una muestra de ajuste de 1.800 perfiles y semilla 42. Los porcentajes de esta tabla se calcularon al asignar los 30.000 perfiles sintéticos a los medoides guardados en `models/gower_kmedoids_k3.joblib`.
+## Estado
 
-| Cluster | Tamaño | Perfil descriptivo (medianas) | Señales frecuentes | Comprensibilidad académica |
-|---|---:|---|---|---|
-| 0 | 9.321 (31,1 %) | 48 años; ingreso neto $2,34 M; gastos esenciales $1,82 M; deuda vigente $333 mil; flujo disponible **−$117 mil**; historial 96 meses. | Empleo formal, salario fijo y crédito formal son las categorías más frecuentes. El proxy derivado marca 61 % alto y 36 % medio. | **Media-alta:** se reconoce una trayectoria crediticia estable, pero el flujo mediano es deficitario. Conviene explicar esa combinación y evitar resumirla como “buen pagador”. |
-| 1 | 8.211 (27,4 %) | 48 años; ingreso neto $3,67 M; gastos esenciales $1,97 M; deuda vigente $571 mil; flujo disponible $647 mil; historial 91 meses. | Estudia y trabaja, salario fijo y crédito formal son las categorías más frecuentes. El proxy marca 51 % alto y 48 % medio. | **Media:** se distingue por ingreso y flujo disponibles mayores, aunque comparte historial formal con el cluster 0. |
-| 2 | 12.468 (41,6 %) | 43 años; ingreso neto $2,53 M; gastos esenciales $1,95 M; deuda vigente mediana $0; flujo disponible $448 mil; historial mediano 0 meses. | Estudia, salario fijo y sin experiencia crediticia son las categorías más frecuentes. El proxy marca 70 % bajo. | **Alta como descripción, limitada como conclusión:** la falta de historial separa el grupo, pero no demuestra falta de conocimientos financieros ni incapacidad de pago. |
+La asignación corresponde al artefacto local `models/gower_kmedoids_k3.joblib`, reentrenado con la base final y las variables relativas. Los IDs se vinculan a rutas por el perfil mediano de cada grupo: menor historial para educación, mayor historial y flujo para viabilidad formal, y el grupo restante para cuidado del historial. Los IDs son propios de esta corrida y pueden cambiar al reentrenar.
 
-Los montos se expresan en COP y se redondean para facilitar la lectura. Las categorías “más frecuentes” son modas del grupo, no describen a todas las personas del cluster.
+## Perfiles de Gower + K-Medoids
 
-## Lectura global
+| Cluster nuevo | Tamaño en 30.000 | Medianas principales | Arquetipo que recupera |
+|---:|---:|---|---|
+| 0 | 12.002 (40,0%) | Ingreso mensual $5,00 M; gastos esenciales $2,03 M; cuotas $262 mil; historial 180 meses; flujo +$2,66 M; proxy alto 100%. | Viabilidad estudio formal de crédito |
+| 1 | 9.131 (30,4%) | Ingreso mensual $1,47 M; gastos esenciales $1,22 M; cuotas $874 mil; historial 30 meses; flujo −$628 mil; proxy medio 89%. | Cuida tu historial crediticio |
+| 2 | 8.867 (29,6%) | Ingreso mensual $1,03 M; gastos esenciales $793 mil; sin cuotas ni historial; flujo +$358 mil; proxy bajo 95%. | Iniciemos con educación financiera |
 
-Los perfiles se pueden describir con señales reconocibles —historial y deuda, ingreso y flujo, experiencia crediticia—, pero **no quedan suficientemente separados ni estables para decidir rutas de crédito reales**. En la comparación exploratoria, silhouette Gower fue aproximadamente 0,113; al variar la muestra, el ARI promedio frente a la referencia fue 0,26. La base es sintética y el nivel de educación financiera es un proxy derivado del historial, por lo que sus porcentajes son circulares y no una medición independiente.
+Los IDs de cluster son etiquetas internas arbitrarias y pueden cambiar al reentrenar. La comparación controlada del estudio obtuvo ARI 0,972 para Gower + K-Medoids, pero el artefacto de API se ajusta en una muestra de 1.800 y produce esta asignación final. La base es sintética y fue construida para separar perfiles; no se interpreta como riesgo, solvencia ni probabilidad de aprobación.
 
-## Rutas académicas que devuelve la API
+## Rutas académicas propuestas
 
-`POST /v1/clusterizar` incluye `recomendacion`, con el nombre del grupo, un mensaje para la persona ficticia, el fundamento y una aclaración. Estas reglas sirven para presentar el ejercicio en clase; no son una capa validada para decisiones financieras reales.
+| Cluster de la base final | Ruta | Mensaje académico |
+|---:|---|---|
+| 0 | **Viabilidad estudio formal de crédito** | Invita a completar información en una siguiente sesión para revisar qué alternativa podría ajustarse a sus necesidades; no implica aprobación. |
+| 1 | **Cuida tu historial crediticio** | Muestra el cupo didáctico de $300.000 si el flujo es cero o negativo y $500.000 si es positivo. No es oferta ni recomendación de endeudamiento. |
+| 2 | **Iniciemos con educación financiera** | Invita a completar un curso corto antes de decidir sobre un primer crédito. La falta de historial no prueba falta de conocimientos financieros. |
 
-| Grupo | Nombre | Salida ilustrativa |
-|---|---|---|
-| 0 | **Viabilidad estudio formal de crédito** | Invita a la siguiente sesión a completar información para revisar qué crédito se acomoda a sus necesidades. No significa que el crédito sea viable o preaprobado. Si el flujo es cero o negativo, la respuesta indica que debe revisarse antes de evaluar un monto. |
-| 1 | **Cuida tu historial crediticio** | Muestra un cupo ficticio de **$300.000 COP** si el flujo mensual disponible es cero o negativo, y **$500.000 COP** si es positivo. El cupo es una regla didáctica; si el flujo no es positivo, la respuesta recuerda revisar ingresos, gastos y deudas antes de considerar una obligación real. |
-| 2 | **Iniciemos con educación financiera** | Invita a la siguiente sesión a tomar un curso corto e interactivo antes de decidir sobre un primer crédito. No tener historial no significa carecer de conocimientos financieros; el nivel de educación financiera usado en este proyecto es un proxy derivado del historial. |
-
-La ruta depende del `cluster_id`; para el grupo 1, el cupo también depende del `flujo_mensual_disponible_cop` calculado por la API. `distancia_gower_al_medoid` indica proximidad descriptiva al medoide, no confianza o probabilidad. Para inspeccionar el resumen programáticamente, consultar `GET /v1/modelo`.
+En el artefacto regenerado, el mapa reportado por `GET /v1/modelo` es `0 → viabilidad_formal`, `1 → cuidar_historial`, `2 → educacion_financiera`. La API calcula los 10 campos derivados del pipeline y utiliza las seis variables categóricas y las diez numéricas descritas en la documentación de la base final. La API pública de Render requiere un despliegue posterior para recibir estos cambios.

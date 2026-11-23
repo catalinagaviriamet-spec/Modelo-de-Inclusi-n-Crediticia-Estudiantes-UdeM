@@ -1,78 +1,59 @@
-# Perfiles financieros sintéticos
+# Base sintética final y pipeline
 
-## Propósito y límites
+## Base oficial del proyecto
 
-`data/raw/perfiles_crediticios_sinteticos.csv` contiene 30.000 perfiles completamente ficticios para explorar el flujo de una ficha y desarrollar prototipos. No proviene de clientes, estudiantes, entidades financieras ni encuestas; no representa una muestra estadística de Colombia o de la Universidad de Medellín.
+La entrada oficial es [`data/raw/perfiles_crediticios_sinteticos.csv`](../data/raw/perfiles_crediticios_sinteticos.csv), con 30.000 perfiles ficticios. Se construyó con distribuciones controladas para representar tres arquetipos académicos: viabilidad de estudio formal (40%), cuidado del historial (30%) e inicio en educación financiera (30%). Las proporciones y los patrones financieros se diseñaron para facilitar una comparación didáctica de clusters; no estiman prevalencias de clientes, estudiantes UdeM o población colombiana.
 
-El CSV de `data/raw/` contiene los campos de entrada que podría entregar una persona. El pipeline genera `nivel_educacion_financiera`, `gastos_esenciales_mensuales_cop` y `flujo_mensual_disponible_cop`; la salida se guarda en `data/processed/`. Así, la categoría y el flujo se calculan con el mismo código durante el prototipado y en una futura integración de producción.
+El archivo de referencia `data/processed/referencia_arquetipos_sinteticos.csv` conserva los arquetipos usados para auditar la recuperación de los grupos. No es un campo de entrada, no se une al dataset del modelo y no debe publicarse como etiqueta observable del cliente.
 
-## Tamaño y reproducibilidad
+## Flujo para generar la base procesada
 
-- Registros: 30.000 (se puede cambiar con `--n`).
-- El CSV de entrada contiene 28 campos; el procesamiento añade 3 variables derivadas y genera 31 campos.
-- Semilla inicial: `20261108`.
-- Moneda de referencia: pesos colombianos (COP).
-- Generación reproducible: `python scripts/generar_perfiles_sinteticos.py`.
-- Para regenerar: `python scripts/generar_perfiles_sinteticos.py --n 30000 --seed 20261108`.
-- Para procesar los campos de entrada: `python scripts/ejecutar_pipeline_perfil.py`.
-- Salida procesada predeterminada: `data/processed/perfiles_crediticios_procesados.csv`.
+El CSV crudo contiene identificador y campos de entrada. Se recalculan todas las variables derivadas con el código compartido entre el pipeline por lotes y la API:
 
-El generador crea valores variados y relaciones plausibles para demostración; las distribuciones no se calibraron con evidencia poblacional. La base puede compartirse porque no contiene datos personales reales.
+```bash
+uv run python scripts/ejecutar_pipeline_perfil.py
+```
 
-## Diccionario de campos
+La salida oficial es [`data/processed/perfiles_crediticios_procesados.csv`](../data/processed/perfiles_crediticios_procesados.csv), con 33 columnas. El pipeline debe terminar sin errores; exige montos enteros, finitos y no negativos, historial coherente con experiencia y al menos una persona por hogar.
 
-| Campo | Descripción |
+## Variables de entrada
+
+| Campo | Significado |
 |---|---|
-| `id_persona` | Identificador ficticio, sin relación con una persona real. |
-| `edad` | Edad sintética entre 18 y 74 años. |
-| `rango_edad` | Categoría derivada de la edad: `18-25`, `26-40`, `41-60` o `61-74`. |
-| `tipo_hogar` | Vive solo, comparte vivienda, vive con familia, con pareja u otro. |
-| `personas_hogar` | Número de personas en el hogar. |
-| `personas_a_cargo` | Personas dependientes económicamente dentro del hogar. |
-| `nivel_estudio` | Nivel educativo sintético. |
-| `situacion_laboral` | Situación laboral sintética. |
-| `tipo_ingreso` | Sin ingresos, salario fijo, ingreso variable, informal o apoyo familiar. |
-| `ingreso_mensual_cop` | Ingreso mensual reportado sintético en COP. |
-| `tiene_ingresos` | Indicador 1/0 derivado de ingreso mensual mayor que cero. |
-| `ingreso_neto_mensual_cop` | Ingreso neto mensual que usa el cálculo del flujo disponible. En una ficha real debe ingresarlo o confirmarlo el cliente. |
-| `tiene_vivienda_propia` | Indicador sintético 1/0. |
-| `tiene_vehiculo` | Indicador sintético 1/0. |
-| `gasto_vivienda_mensual_cop` | Gasto mensual de vivienda del cliente/hogar en COP. |
-| `gasto_alimentacion_mensual_cop` | Gasto mensual de alimentación en COP. |
-| `gasto_transporte_mensual_cop` | Gasto mensual de transporte en COP. |
-| `gasto_salud_mensual_cop` | Gasto mensual de salud en COP. |
-| `gasto_educacion_mensual_cop` | Gasto mensual de educación en COP. |
-| `pago_servicios_publicos_cop` | Pago mensual sintético de servicios del hogar en COP. |
-| `otros_gastos_esenciales_mensuales_cop` | Otros gastos esenciales mensuales en COP. |
-| `tipo_plan_celular` | Sin línea, prepago o pospago. |
-| `experiencia_crediticia` | Sin experiencia, crédito formal o informal, tarjeta o microcrédito. |
-| `meses_historial_crediticio` | Meses sintéticos de historial; cero si no tiene experiencia. |
-| `cuotas_deudas_vigentes_cop` | Suma mensual sintética de las cuotas de deudas vigentes en COP. |
-| `ahorro_disponible_cop` | Ahorro disponible sintético en COP. |
-| `moras_ultimos_12_meses` | Número sintético de moras recientes; cero si no tiene historial. |
-| `monto_solicitado_cop` | Monto solicitado sintético en COP. |
-| `nivel_educacion_financiera` | Campo derivado por el pipeline (`bajo`, `medio`, `alto`). Es un proxy del historial y no está en el CSV crudo. |
-| `gastos_esenciales_mensuales_cop` | Campo derivado por el pipeline: suma de vivienda, alimentación, transporte, salud, educación, servicios públicos y otros esenciales. |
-| `flujo_mensual_disponible_cop` | Campo derivado por el pipeline: ingreso neto menos gastos esenciales y cuotas de deudas vigentes. Puede ser negativo. |
+| `id_persona` | Identificador ficticio; no entra al modelo. |
+| `edad` | Edad de 18 a 74 años; se conserva independiente del arquetipo. |
+| `tipo_hogar`, `personas_hogar`, `personas_a_cargo` | Tipo y tamaño de hogar y dependientes; se conservan independientes del arquetipo. |
+| `situacion_laboral`, `tipo_ingreso`, `ingreso_neto_mensual_cop` | Situación laboral, fuente de ingreso e ingreso neto mensual. |
+| `tiene_vivienda_propia`, `tiene_vehiculo` | Indicadores 0/1 de activos. |
+| `gasto_vivienda_mensual_cop`, `gasto_alimentacion_mensual_cop`, `gasto_transporte_mensual_cop`, `gasto_salud_mensual_cop`, `gasto_educacion_mensual_cop`, `pago_servicios_publicos_cop`, `otros_gastos_esenciales_mensuales_cop` | Rubros de gasto mensual en COP. |
+| `experiencia_crediticia`, `meses_historial_crediticio`, `moras_ultimos_12_meses` | Tipo y duración de la experiencia y moras recientes. |
+| `cuotas_deudas_vigentes_cop`, `ahorro_disponible_cop`, `monto_solicitado_cop` | Cuotas mensuales, ahorro y monto solicitado en COP. |
 
-## Regla del proxy de educación financiera
+## Variables calculadas por el pipeline
 
-- `bajo`: no tiene experiencia crediticia o tiene cero meses de historial.
-- `medio`: tiene historial, pero dura menos de 12 meses o registra una o más moras en los últimos 12 meses.
-- `alto`: tiene al menos 12 meses de historial y ninguna mora registrada en los últimos 12 meses.
+| Campo | Regla |
+|---|---|
+| `nivel_educacion_financiera` | Proxy: bajo sin experiencia; alto con al menos 12 meses y cero moras; medio para los demás perfiles con historial. El historial no mide conocimientos reales. |
+| `gastos_esenciales_mensuales_cop` | Suma de los siete rubros esenciales. |
+| `flujo_mensual_disponible_cop` | Ingreso neto − gastos esenciales − cuotas vigentes. Puede ser negativo. |
+| `ratio_deuda_ingreso` | Cuotas vigentes / ingreso neto, redondeado a 4 decimales. Vacío cuando no hay ingreso. |
+| `ratio_gastos_ingreso` | Gastos esenciales / ingreso neto, redondeado a 4 decimales. Vacío cuando no hay ingreso. |
+| `ingreso_per_capita_cop` | Ingreso neto / personas del hogar, redondeado al peso más cercano. |
+| `cobertura_ahorro_meses` | Ahorro / gastos esenciales, redondeado a 2 decimales. |
+| `capacidad_cuota_referencial_cop` | Máximo entre cero y el menor valor de 70% del flujo disponible o 20% del ingreso neto menos cuotas vigentes; redondeado hacia abajo. Es una regla didáctica inferida, no un estándar de crédito. |
+| `nivel_experiencia_crediticia_proxy` | Sin experiencia; consolidada con 12+ meses y cero moras; en desarrollo en otro caso. |
+| `segmento_generador` | Categoría determinística según las reglas de prioridad abajo. No se usa como predictor de cluster. |
 
-La regla se aplica dentro de `src/pipeline/perfil_financiero.py` antes de la clasificación. Sirve para producir la categoría operativa solicitada, pero **historial crediticio y educación financiera no son equivalentes**. No tener historial puede deberse a barreras de acceso, no a falta de conocimientos. Para una evaluación válida harían falta preguntas o ejercicios que midan conocimientos y comportamientos directamente. Si se usa esta categoría como objetivo de una clasificación, no se deben incluir sus variables de origen (`experiencia_crediticia`, `meses_historial_crediticio` y `moras_ultimos_12_meses`) entre los predictores; hacerlo filtraría la respuesta al modelo.
+### Prioridad de `segmento_generador`
 
-## Flujo mensual disponible en el pipeline
+Se aplica la primera regla que corresponda: (1) ingreso cero y sin experiencia; (2) deuda superior a 50% del ingreso; (3) ahorro para al menos tres meses de gastos; (4) ingreso o empleo informal, o independencia vulnerable; (5) independencia estable; (6) salario fijo; (7) categoría de respaldo informal/vulnerable. El orden evita etiquetas superpuestas y permite que el ahorro cubra meses futuros aunque el flujo del mes sea negativo.
 
-La función `calcular_variables_derivadas(perfil)` requiere ingreso neto, los siete rubros de gastos esenciales y las cuotas de deudas vigentes. Si falta un dato, no lo asume como cero: devuelve un error para que el formulario solicite la información. Los montos deben ser finitos, no negativos y expresados en pesos enteros. El resultado puede ser negativo y se conserva como señal de déficit.
+## Variables que entran a la comparación de clustering
 
-El cálculo implementado es:
+Se usan 10 variables numéricas: `edad`, `personas_hogar`, `personas_a_cargo`, `ingreso_per_capita_cop`, `ratio_gastos_ingreso`, `ratio_deuda_ingreso`, `cobertura_ahorro_meses`, `meses_historial_crediticio`, `moras_ultimos_12_meses` y `monto_solicitado_cop`.
 
-`gastos_esenciales_mensuales_cop = vivienda + alimentación + transporte + salud + educación + servicios públicos + otros esenciales`
+Se usan seis categóricas: `tipo_hogar`, `situacion_laboral`, `tipo_ingreso`, `tiene_vivienda_propia`, `tiene_vehiculo` y `experiencia_crediticia`. No se incluyen `id_persona`, el arquetipo de referencia, `segmento_generador`, `nivel_educacion_financiera` ni los montos usados para construir los ratios. Si el ingreso es cero, Gower omite por pares los ratios no definidos; los otros métodos usan imputación mediana solo para poder operar con matrices numéricas.
 
-`flujo_mensual_disponible_cop = ingreso_neto_mensual_cop - gastos_esenciales_mensuales_cop - cuotas_deudas_vigentes_cop`
+## Límites de uso
 
-Este flujo es un insumo de capacidad de pago, no un monto de crédito aprobado ni una decisión final. Para comparar con una nueva cuota se necesitan además monto, plazo, tasa, frecuencia y cargos del producto. Los servicios públicos se suman una sola vez dentro de los gastos esenciales.
-
-La Superintendencia Financiera describe el análisis de capacidad de pago con flujos de ingresos y egresos, flujo de caja, endeudamiento y características financieras del crédito. Este cálculo es un insumo del proyecto, no un umbral regulatorio ni una decisión automática de otorgamiento. [Referencia de la SFC](https://www.superfinanciera.gov.co/publicaciones/10096970/normativanormativa-generalboletin-juridico-superintendencia-financieraboletin-juridico-numero-credito-deudor-solidario-analisis-de-endeudamiento-10096970/).
+La base final fue construida para que las diferencias entre los arquetipos sean más marcadas que en la base exploratoria anterior. Por ello, la Silhouette de aproximadamente 0,41 y el acuerdo con los arquetipos son resultados de un escenario sintético diseñado; no son validación en clientes reales ni garantía de generalización. Los grupos, proxies, capacidad referencial y rutas de la API son únicamente parte de una demostración académica.
