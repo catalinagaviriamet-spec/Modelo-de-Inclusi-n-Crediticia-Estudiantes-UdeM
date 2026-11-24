@@ -72,6 +72,6 @@ uv run uvicorn api.main:app --host 127.0.0.1 --port 8000
 
 Abre `http://127.0.0.1:8000/docs`, usa **POST /v1/clusterizar → Try it out** y selecciona uno de los tres ejemplos sintéticos que Swagger ofrece: un perfil representativo de cada ruta. `GET /v1/modelo` muestra las variables de entrada, los clusters, el mapa de rutas y el criterio usado para elegir K-Prototypes. La API genera los mismos cálculos del pipeline antes de clusterizar.
 
-**Render:** el servicio está configurado para desplegar desde `main`. Después de que termine el despliegue del commit actual, valida `/health`, `GET /v1/modelo` y los tres ejemplos de `/docs` antes de usar la URL pública en la sustentación. Los grupos y cupos son simulaciones didácticas y no representan evaluaciones ni ofertas de crédito reales.
+**Render:** el código actualizado está en `main`, pero la última consulta al servicio público todavía devolvió Gower + K-Medoids 0.1.0. En el panel de Render del servicio `modelo-inclusion-crediticia-api`, ejecuta **Manual Deploy → Deploy latest commit**. Confirma el cambio cuando `GET /v1/modelo` responda **K-Prototypes 0.3.0**; luego valida `/health` y los tres ejemplos de `/docs` antes de usar la URL pública en la sustentación. Los grupos y cupos son simulaciones didácticas y no representan evaluaciones ni ofertas de crédito reales.
 
 La composición y lectura de los clusters está en [`docs/perfiles_clusters_api.md`](docs/perfiles_clusters_api.md); la comparación completa de modelos está en [`docs/comparacion_modelos_base_final.md`](docs/comparacion_modelos_base_final.md).
