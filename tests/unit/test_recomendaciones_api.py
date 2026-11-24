@@ -53,12 +53,14 @@ class RecomendacionesAcademicasTests(unittest.TestCase):
             modelo=joblib.load(ARTIFACT)
         )))
         info = informacion_modelo(request)
+        self.assertEqual(info["nombre"], "K-Prototypes")
         self.assertEqual(info["variables_numericas"][3], "ingreso_per_capita_cop")
+        self.assertEqual(info["evidencia_seleccion"]["silhouette_gower"], 0.416542)
         self.assertEqual(set(info["mapa_rutas_por_cluster"].values()), {
             "educacion_financiera", "viabilidad_formal", "cuidar_historial"
         })
         respuesta = clusterizar(request, PerfilEntrada(**EJEMPLO_PERFIL_SINTETICO))
-        self.assertEqual(respuesta.cluster_id, 2)
+        self.assertEqual(respuesta.cluster_id, 1)
         self.assertEqual(
             respuesta.recomendacion.nombre_grupo,
             "Iniciemos con educación financiera",

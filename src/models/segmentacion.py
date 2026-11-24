@@ -98,6 +98,43 @@ class KPrototypesPerfil:
         return _distancia_kproto(x_num, categoricas, self.centros_num, self.centros_cat, self.gamma).argmin(axis=1)
 
 
+@dataclass
+class KPrototypesPredictor:
+    """Predictor serializable para la API, con el esquema mixto de la base final."""
+
+    scaler: StandardScaler
+    centros_num: np.ndarray
+    centros_cat: np.ndarray
+    imputaciones_numericas: dict[str, float]
+    columnas_numericas: tuple[str, ...]
+    columnas_categoricas: tuple[str, ...]
+    gamma: float
+    k: int
+    seed: int
+    max_iter: int
+    cluster_profiles: list[dict]
+    cluster_routes: dict[str, str]
+    dataset_size: int
+
+    def predict(self, df: pd.DataFrame):
+        numericas, categoricas = _seleccionar(
+            df, self.columnas_categoricas, self.columnas_numericas,
+            imputar_faltantes=False,
+        )
+        numericas = numericas.copy()
+        for j, columna in enumerate(self.columnas_numericas):
+            numericas[:, j] = np.where(
+                np.isfinite(numericas[:, j]),
+                numericas[:, j],
+                self.imputaciones_numericas[columna],
+            )
+        normalizadas = self.scaler.transform(numericas)
+        distancias = _distancia_kproto(
+            normalizadas, categoricas, self.centros_num, self.centros_cat, self.gamma
+        )
+        return distancias.argmin(axis=1), distancias.min(axis=1)
+
+
 def _fit_kprototypes(numericas, categoricas, k, seed, gamma=1.0, max_iter=30):
     scaler = StandardScaler()
     x_num = scaler.fit_transform(numericas)
@@ -309,6 +346,70 @@ def _resumir_clusters(df: pd.DataFrame, labels) -> list[dict]:
             "educacion_financiera_proxy_pct": nivel,
         })
     return perfiles
+
+
+def _mapear_rutas_por_perfil(perfiles: list[dict]) -> dict[str, str]:
+    """Asocia IDs arbitrarios a rutas usando historial y flujo medianos."""
+    por_cluster = {p["cluster_id"]: p["medianas"] for p in perfiles}
+    educacion = min(por_cluster, key=lambda c: por_cluster[c]["meses_historial_crediticio"])
+    viabilidad = max(
+        (c for c in por_cluster if c != educacion),
+        key=lambda c: (
+            por_cluster[c]["meses_historial_crediticio"],
+            por_cluster[c]["flujo_mensual_disponible_cop"],
+        ),
+    )
+    cuidar = next(c for c in por_cluster if c not in {educacion, viabilidad})
+    return {
+        str(educacion): "educacion_financiera",
+        str(viabilidad): "viabilidad_formal",
+        str(cuidar): "cuidar_historial",
+    }
+
+
+def ajustar_kprototypes_api(
+    df: pd.DataFrame,
+    k=3,
+    seed=42,
+    gamma=1.0,
+    max_iter=30,
+    columnas_categoricas=None,
+    columnas_numericas=None,
+) -> KPrototypesPredictor:
+    """Ajusta el K-Prototypes académico y prepara el predictor de la API."""
+    columnas_categoricas = tuple(columnas_categoricas or CATEGORICAS)
+    columnas_numericas = tuple(columnas_numericas or NUMERICAS)
+    numericas, categoricas = _seleccionar(
+        df, columnas_categoricas, columnas_numericas, imputar_faltantes=False
+    )
+    numericas = numericas.copy()
+    imputaciones = {
+        columna: float(np.nanmedian(numericas[:, j]))
+        for j, columna in enumerate(columnas_numericas)
+    }
+    for j, columna in enumerate(columnas_numericas):
+        numericas[:, j] = np.where(
+            np.isfinite(numericas[:, j]), numericas[:, j], imputaciones[columna]
+        )
+    modelo, labels = _fit_kprototypes(
+        numericas, categoricas, k, seed, gamma=gamma, max_iter=max_iter
+    )
+    perfiles = _resumir_clusters(df, labels)
+    return KPrototypesPredictor(
+        scaler=modelo.scaler,
+        centros_num=modelo.centros_num,
+        centros_cat=modelo.centros_cat,
+        imputaciones_numericas=imputaciones,
+        columnas_numericas=columnas_numericas,
+        columnas_categoricas=columnas_categoricas,
+        gamma=gamma,
+        k=k,
+        seed=seed,
+        max_iter=max_iter,
+        cluster_profiles=perfiles,
+        cluster_routes=_mapear_rutas_por_perfil(perfiles),
+        dataset_size=len(df),
+    )
 
 
 def ajustar_gower_kmedoids(

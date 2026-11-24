@@ -21,7 +21,7 @@ def main() -> None:
     destino = Path(sys.argv[1]).expanduser().resolve()
     if destino == ROOT or ROOT in destino.parents:
         raise SystemExit("El destino debe quedar fuera del repositorio del proyecto.")
-    modelo = ROOT / "models/gower_kmedoids_k3.joblib"
+    modelo = ROOT / "models/kprototypes_k3.joblib"
     if not modelo.is_file():
         raise SystemExit(f"No se encontró el artefacto del modelo: {modelo}")
 
@@ -34,7 +34,7 @@ def main() -> None:
         shutil.copytree(ROOT / carpeta, destino / carpeta, dirs_exist_ok=True,
                         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     (destino / "models").mkdir(exist_ok=True)
-    shutil.copy2(modelo, destino / "models/gower_kmedoids_k3.joblib")
+    shutil.copy2(modelo, destino / "models/kprototypes_k3.joblib")
     print(f"Archivos listos para Space en: {destino}")
 
 

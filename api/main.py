@@ -1,4 +1,4 @@
-"""API académica para explorar el cluster Gower + K-Medoids."""
+"""API académica del modelo ganador K-Prototypes."""
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
@@ -10,12 +10,12 @@ import pandas as pd
 from fastapi import Body, FastAPI, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.models.segmentacion import GowerKMedoidsPredictor
+from src.models.segmentacion import KPrototypesPredictor
 from src.pipeline.perfil_financiero import calcular_variables_derivadas
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ARTIFACT = ROOT / "models/gower_kmedoids_k3.joblib"
+ARTIFACT = ROOT / "models/kprototypes_k3.joblib"
 EJEMPLO_PERFIL_SINTETICO = {
     "edad": 34,
     "tipo_hogar": "vive_con_familia",
@@ -43,7 +43,7 @@ EJEMPLO_PERFIL_SINTETICO = {
 EJEMPLOS_PERFILES_BASE_FINAL = {
     "viabilidad_formal": {
         "summary": "Cluster 0 — Viabilidad estudio formal de crédito",
-        "description": "Perfil medoid sintético de la base final; el flujo es positivo.",
+        "description": "Perfil sintético representativo de la base final; el flujo es positivo.",
         "value": {
             "edad": 46, "tipo_hogar": "vive_con_familia", "personas_hogar": 3,
             "personas_a_cargo": 1, "situacion_laboral": "empleo_formal",
@@ -62,7 +62,7 @@ EJEMPLOS_PERFILES_BASE_FINAL = {
     },
     "cuidar_historial": {
         "summary": "Cluster 1 — Cuida tu historial crediticio",
-        "description": "Perfil medoid sintético de la base final; el flujo es negativo.",
+        "description": "Perfil sintético representativo de la base final; el flujo es negativo.",
         "value": {
             "edad": 35, "tipo_hogar": "vive_con_pareja", "personas_hogar": 3,
             "personas_a_cargo": 1, "situacion_laboral": "independiente",
@@ -81,7 +81,7 @@ EJEMPLOS_PERFILES_BASE_FINAL = {
     },
     "educacion_financiera": {
         "summary": "Cluster 2 — Iniciemos con educación financiera",
-        "description": "Perfil medoid sintético de la base final, sin historial crediticio.",
+        "description": "Perfil sintético representativo de la base final, sin historial crediticio.",
         "value": {
             "edad": 31, "tipo_hogar": "vive_con_familia", "personas_hogar": 3,
             "personas_a_cargo": 0, "situacion_laboral": "estudia",
@@ -171,7 +171,7 @@ class RecomendacionAcademica(BaseModel):
 
 class ResultadoCluster(BaseModel):
     cluster_id: int
-    distancia_gower_al_medoid: float
+    distancia_al_prototipo: float
     variables_derivadas: VariablesDerivadas
     recomendacion: RecomendacionAcademica
     nota: str
@@ -260,7 +260,7 @@ app = FastAPI(
         "derivadas, asigna un cluster exploratorio y presenta una ruta académica simulada. "
         "No evalúa solicitudes reales ni aprueba créditos."
     ),
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
 
@@ -281,14 +281,13 @@ def health(request: Request):
 
 @app.get("/v1/modelo", tags=["Información"])
 def informacion_modelo(request: Request):
-    modelo: GowerKMedoidsPredictor = request.app.state.modelo
+    modelo: KPrototypesPredictor = request.app.state.modelo
     return {
-        "nombre": "Gower + K-Medoids",
-        "version": "0.2.0-academica",
+        "nombre": "K-Prototypes",
+        "version": "0.3.0-academica",
         "k": modelo.k,
-        "tamano_muestra_ajuste": modelo.train_sample_size,
-        "inicios_pam": modelo.n_starts,
-        "max_iteraciones_pam": modelo.max_iter,
+        "gamma": modelo.gamma,
+        "max_iteraciones": modelo.max_iter,
         "semilla": modelo.seed,
         "perfiles_en_base_sintetica": modelo.dataset_size,
         "clusters": modelo.cluster_profiles,
@@ -296,13 +295,18 @@ def informacion_modelo(request: Request):
         "variables_categoricas": list(modelo.columnas_categoricas),
         "mapa_rutas_por_cluster": modelo.cluster_routes,
         "evidencia_seleccion": {
-            "silhouette_gower": 0.413112,
+            "criterio_principal": "Mayor Silhouette Gower en k=3",
+            "silhouette_gower": 0.416542,
             "k": 3,
             "comparacion_candidatos": {
                 "K-Prototypes": 0.416542,
                 "One-Hot + K-Means": 0.416542,
                 "Gower + K-Medoids": 0.413112,
             },
+            "desempate": [
+                "K-Prototypes representa directamente las variables numéricas y categóricas mixtas.",
+                "En la corrida comparativa su ajuste tardó 0.88 s, frente a 1.22 s para One-Hot + K-Means.",
+            ],
             "nota": "Métricas de evaluación comparativa en datos sintéticos; no son probabilidades ni garantías del perfil consultado.",
         },
         "limitacion": (
@@ -327,13 +331,13 @@ def clusterizar(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     fila = {**datos, **derivadas}
-    modelo: GowerKMedoidsPredictor = request.app.state.modelo
+    modelo: KPrototypesPredictor = request.app.state.modelo
     etiquetas, distancias = modelo.predict(pd.DataFrame([fila]))
     cluster_id = int(etiquetas[0])
     ruta = modelo.cluster_routes[str(cluster_id)]
     return ResultadoCluster(
         cluster_id=cluster_id,
-        distancia_gower_al_medoid=round(float(distancias[0]), 4),
+        distancia_al_prototipo=round(float(distancias[0]), 4),
         variables_derivadas=derivadas,
         recomendacion=construir_recomendacion(
             ruta, derivadas["flujo_mensual_disponible_cop"]

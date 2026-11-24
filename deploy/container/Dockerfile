@@ -11,7 +11,7 @@ RUN uv sync --frozen --no-dev
 
 COPY api ./api
 COPY src ./src
-COPY models/gower_kmedoids_k3.joblib ./models/gower_kmedoids_k3.joblib
+COPY models/kprototypes_k3.joblib ./models/kprototypes_k3.joblib
 
 EXPOSE 7860
 CMD ["sh", "-c", "uv run uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-7860}"]

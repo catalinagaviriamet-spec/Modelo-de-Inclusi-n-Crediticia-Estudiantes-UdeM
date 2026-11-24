@@ -38,6 +38,8 @@ El EDA de la base final está en [`notebooks/03_eda_base_final.ipynb`](notebooks
 
 Los tres modelos —K-Prototypes, One-Hot + K-Means y Gower + K-Medoids— se comparan en k=3 con `uv run python scripts/entrenar_modelos_finales.py`. Las métricas y las etiquetas del mejor resultado quedan en `data/processed/comparacion_clusterizaciones.csv` y `data/processed/perfiles_clusterizados.csv`. La interpretación y las limitaciones académicas están en [`docs/comparacion_modelos_base_final.md`](docs/comparacion_modelos_base_final.md).
 
+El ganador final es **K-Prototypes**: empató por el mayor Silhouette Gower (0,4165) y se prefirió como desempate por su tratamiento directo de variables mixtas y menor tiempo observado en la corrida comparativa. La justificación lista para llevar a la presentación está en [`docs/decision_modelo_ganador.md`](docs/decision_modelo_ganador.md).
+
 Para instalar las dependencias con Python 3.12 y ejecutar la comparación de la base final:
 
 ```bash
@@ -45,7 +47,7 @@ uv sync
 uv run python scripts/entrenar_modelos_finales.py
 ```
 
-El protocolo de evaluación, el cuadro de métricas, la naturaleza controlada de los arquetipos y el pendiente de la API están en [`docs/comparacion_modelos_base_final.md`](docs/comparacion_modelos_base_final.md).
+El protocolo, la comparación de modelos y sus limitaciones están en [`docs/comparacion_modelos_base_final.md`](docs/comparacion_modelos_base_final.md); el desempate y las razones para la presentación, en [`docs/decision_modelo_ganador.md`](docs/decision_modelo_ganador.md).
 
 ## Validación de comportamientos clave
 
@@ -59,7 +61,7 @@ El alcance y las reglas que se validan están documentados en [`docs/validacion_
 
 ## API académica
 
-La API local ya usa el esquema de entrada de la base final, vuelve a calcular los 10 campos derivados del pipeline, asigna perfiles con el artefacto Gower + K-Medoids actualizado y devuelve una ruta académica. El mapa vigente es cluster 0 → viabilidad formal, cluster 1 → cuidar historial y cluster 2 → educación financiera. Los IDs pueden cambiar al volver a entrenar; consulta `GET /v1/modelo` para ver el mapa guardado en el artefacto.
+La API local usa el modelo ganador K-Prototypes, vuelve a calcular los 10 campos derivados del pipeline y devuelve una ruta académica. En el artefacto actual, el mapa es cluster 0 → viabilidad formal, cluster 1 → educación financiera y cluster 2 → cuidar historial. Los IDs pueden cambiar al volver a entrenar; consulta `GET /v1/modelo` para ver el mapa guardado en el artefacto.
 
 Para entrenar el artefacto y ejecutar la API local:
 
@@ -68,8 +70,8 @@ uv run python scripts/entrenar_modelo_api.py
 uv run uvicorn api.main:app --host 127.0.0.1 --port 8000
 ```
 
-Abre `http://127.0.0.1:8000/docs`, usa **POST /v1/clusterizar → Try it out** y selecciona uno de los tres ejemplos sintéticos que Swagger ofrece: un perfil representativo de cada ruta. `GET /v1/modelo` muestra las variables de entrada, los clusters, el mapa de rutas y las métricas comparativas. La API genera los mismos cálculos del pipeline antes de clusterizar.
+Abre `http://127.0.0.1:8000/docs`, usa **POST /v1/clusterizar → Try it out** y selecciona uno de los tres ejemplos sintéticos que Swagger ofrece: un perfil representativo de cada ruta. `GET /v1/modelo` muestra las variables de entrada, los clusters, el mapa de rutas y el criterio usado para elegir K-Prototypes. La API genera los mismos cálculos del pipeline antes de clusterizar.
 
-**Estado de Render:** el servicio público aún no se ha desplegado con este artefacto. No uses su URL para presentar la base final hasta actualizar el repo conectado y publicar el nuevo despliegue desde Render. Los grupos y cupos son simulaciones didácticas y no representan evaluaciones ni ofertas de crédito reales.
+**Render:** el servicio está configurado para desplegar desde `main`. Después de que termine el despliegue del commit actual, valida `/health`, `GET /v1/modelo` y los tres ejemplos de `/docs` antes de usar la URL pública en la sustentación. Los grupos y cupos son simulaciones didácticas y no representan evaluaciones ni ofertas de crédito reales.
 
 La composición y lectura de los clusters está en [`docs/perfiles_clusters_api.md`](docs/perfiles_clusters_api.md); la comparación completa de modelos está en [`docs/comparacion_modelos_base_final.md`](docs/comparacion_modelos_base_final.md).

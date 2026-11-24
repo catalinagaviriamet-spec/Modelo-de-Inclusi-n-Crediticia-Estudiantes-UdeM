@@ -10,7 +10,7 @@ short_description: API didáctica para explorar tres clusters en perfiles sinté
 
 # Modelo de Inclusión Crediticia Estudiantes UdeM
 
-API académica de **Gower + K-Medoids (k=3)**, ajustada sobre perfiles sintéticos. Permite consultar la documentación interactiva y enviar un perfil de ejemplo para observar las variables derivadas y el cluster asignado.
+Plantilla de exportación de la API académica de **K-Prototypes (k=3)**, ganador de la comparación con Silhouette Gower 0,4165. El despliegue académico vigente se gestiona en Render; esta carpeta solo conserva una plantilla opcional para Spaces.
 
 ## Uso
 
@@ -25,8 +25,8 @@ La respuesta es exploratoria. Los clusters no son puntajes, decisiones de crédi
 
 | Cluster | Proporción | Perfil descriptivo | Lectura académica |
 |---|---:|---|---|
-| 0 | 31,1 % | Historial extenso, crédito formal, flujo mensual mediano negativo. | Trayectoria crediticia estable con presión sobre el flujo disponible. |
-| 1 | 27,4 % | Ingreso y flujo medianos mayores; también predomina el historial formal. | Perfil con más recursos disponibles; se solapa con el cluster 0 en experiencia. |
-| 2 | 41,6 % | Sin historial crediticio en la mediana; mayor presencia de estudiantes. | Grupo descriptivo de poca experiencia observada; esto no demuestra baja capacidad ni conocimientos financieros. |
+| 0 | 40,0 % | Historial mediano de 180 meses, ingreso formal, flujo mediano positivo. | Viabilidad estudio formal de crédito. |
+| 1 | 30,0 % | Sin historial crediticio en la mediana; predomina estudio y apoyo familiar. | Iniciemos con educación financiera. |
+| 2 | 30,0 % | Historial mediano de 30 meses, cuotas altas y flujo mediano negativo. | Cuida tu historial crediticio. |
 
-La separación y estabilidad de los grupos son limitadas (silhouette Gower ≈ 0,113; ARI de referencia ≈ 0,26). Los porcentajes de educación financiera son un proxy derivado del historial y no una medición independiente.
+El desempate entre K-Prototypes y One-Hot + K-Means se basa en el tratamiento directo de variables mixtas y en menor tiempo observado para K-Prototypes en una sola corrida. Consulta `GET /v1/modelo` para ver el mapa vigente, ya que los IDs pueden cambiar al reentrenar. Las clases y métricas provienen de datos sintéticos diseñados y no representan separación demostrada en personas reales.

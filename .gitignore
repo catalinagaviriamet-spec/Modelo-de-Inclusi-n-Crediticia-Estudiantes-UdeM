@@ -22,7 +22,7 @@ __pycache__/
 !/data/processed/perfiles_clusterizados.csv
 /models/*
 !/models/.gitkeep
-!/models/gower_kmedoids_k3.joblib
+!/models/kprototypes_k3.joblib
 /logs/*
 !/logs/.gitkeep
 /output/*

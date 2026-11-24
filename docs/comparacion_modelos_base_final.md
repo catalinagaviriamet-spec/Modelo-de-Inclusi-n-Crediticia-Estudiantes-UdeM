@@ -16,6 +16,14 @@ Silhouette Gower se calcula en la muestra común y permite contrastar separació
 
 K-Prototypes y One-Hot + K-Means empatan al redondear a cuatro decimales; ambos recuperan exactamente la misma partición que los arquetipos de diseño (ARI=1; los números de cluster pueden permutarse). Gower + K-Medoids queda muy cerca, con ARI=0,972. Sus 30.000 asignaciones tienen tamaños 29,7%, 39,9% y 30,4%; los IDs son arbitrarios y la correspondencia con las narrativas está en `data/processed/distribucion_arquetipos_clusters.csv`.
 
+## Decisión final: K-Prototypes
+
+Se adopta **K-Prototypes** como modelo ganador. El criterio principal fue el mayor Silhouette Gower: K-Prototypes y One-Hot + K-Means empatan exactamente en 0,4165418. También igualan balance de clusters y ARI frente al arquetipo sintético (1,0000), por lo que esas medidas no rompen el empate.
+
+El desempate se hizo con el tipo de datos y el tiempo de ajuste. K-Prototypes trabaja directamente con variables numéricas y categóricas; One-Hot + K-Means requiere codificar las categorías. En la corrida guardada, K-Prototypes tardó 0,88 s y One-Hot + K-Means 1,22 s. Es un tiempo medido en una sola ejecución comparativa y se toma como indicio operativo, no como benchmark concluyente. La decisión queda como K-Prototypes por empatar en la métrica principal, ajustarse directamente a datos mixtos y tener menor tiempo observado.
+
+La implementación académica de K-Prototypes es propia y explícita en el código del proyecto. La selección del algoritmo se basa en el Silhouette Gower; el ARI se informa como recuperación de arquetipos sintéticos diseñados, no como validación en población real.
+
 ## Interpretación académica
 
 Las métricas son sustancialmente mayores que en la base exploratoria previa porque los campos financieros de esta base se generaron con diferencias más marcadas entre los tres arquetipos. Es una prueba controlada de que los algoritmos pueden recuperar esas estructuras. No demuestra que los perfiles existan con esa separación en personas reales ni que los grupos predigan capacidad de pago o resultados crediticios. Las proporciones 40/30/30 también son decisiones de diseño, no prevalencias estimadas.
@@ -38,6 +46,6 @@ uv run python scripts/entrenar_modelos_finales.py
 
 Los resultados quedan en `data/processed/comparacion_clusterizaciones.csv` y las asignaciones del modelo con mayor Silhouette en `data/processed/perfiles_clusterizados.csv`.
 
-## Punto pendiente para la API
+## Integración en la API
 
-La API y el artefacto `models/gower_kmedoids_k3.joblib` aún corresponden a una versión previa: usan un conjunto distinto de variables y asignan las rutas a IDs de cluster anteriores. Antes de desplegar esta base se debe volver a entrenar Gower con las variables finales, guardar y revisar el mapa entre clusters y recomendaciones, actualizar los ejemplos/documentación de la API y verificar sus respuestas. La comparación de tres modelos no sustituye ese paso.
+La API académica usa el artefacto ganador `models/kprototypes_k3.joblib`, entrena con las 10 variables numéricas y seis categóricas finales, y reporta la comparación y el criterio de desempate en `GET /v1/modelo`. La correspondencia actual de clusters y rutas está en [`perfiles_clusters_api.md`](perfiles_clusters_api.md). Los IDs son etiquetas arbitrarias que pueden cambiar al reentrenar; la API guarda el mapa junto con el modelo.

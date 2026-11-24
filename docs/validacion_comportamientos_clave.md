@@ -37,10 +37,10 @@ La API asigna una salida ilustrativa según el cluster producido por el modelo:
 | Cluster | Ruta | Regla comprobada |
 |---|---|---|
 | 0 | Viabilidad estudio formal de crédito | Invita a completar información en la siguiente sesión; no asigna cupo. Cuando el flujo no es positivo, la respuesta dice que debe revisarse antes de evaluar un monto. |
-| 1 | Cuida tu historial crediticio | Cupo simulado de $300.000 COP cuando el flujo es cero o negativo y de $500.000 COP cuando es positivo. |
-| 2 | Iniciemos con educación financiera | Invita al curso corto e interactivo; no asigna cupo. |
+| 1 | Iniciemos con educación financiera | Invita al curso corto e interactivo; no asigna cupo. |
+| 2 | Cuida tu historial crediticio | Cupo simulado de $300.000 COP cuando el flujo es cero o negativo y de $500.000 COP cuando es positivo. |
 
-Los cupos y las rutas son salidas didácticas de un proyecto con perfiles sintéticos. No son ofertas, aprobaciones, rechazos ni recomendaciones aplicables a solicitudes reales.
+En el artefacto K-Prototypes actual, cluster 0 corresponde a viabilidad formal, cluster 1 a educación financiera y cluster 2 a cuidado del historial. Los IDs son arbitrarios y pueden cambiar al reentrenar; `GET /v1/modelo` entrega el mapa vigente. Los cupos y las rutas son salidas didácticas de un proyecto con perfiles sintéticos. No son ofertas, aprobaciones, rechazos ni recomendaciones aplicables a solicitudes reales.
 
 ## Archivos comprobados
 

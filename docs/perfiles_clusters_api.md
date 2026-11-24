@@ -1,25 +1,27 @@
-# Perfiles Gower de la base final y correspondencia de rutas
+# Perfiles K-Prototypes y rutas de la API
 
 ## Estado
 
-La asignación corresponde al artefacto local `models/gower_kmedoids_k3.joblib`, reentrenado con la base final y las variables relativas. Los IDs se vinculan a rutas por el perfil mediano de cada grupo: menor historial para educación, mayor historial y flujo para viabilidad formal, y el grupo restante para cuidado del historial. Los IDs son propios de esta corrida y pueden cambiar al reentrenar.
+La API utiliza el artefacto `models/kprototypes_k3.joblib`, ajustado con la base final procesada de 30.000 perfiles. La ruta se asigna según el perfil mediano de cada grupo. Los IDs son etiquetas internas del ajuste y pueden cambiar si se reentrena; `GET /v1/modelo` devuelve el mapa almacenado junto con el artefacto.
 
-## Perfiles de Gower + K-Medoids
+## Perfiles del artefacto actual
 
-| Cluster nuevo | Tamaño en 30.000 | Medianas principales | Arquetipo que recupera |
+| Cluster | Tamaño | Medianas y rasgos principales | Ruta académica |
 |---:|---:|---|---|
-| 0 | 12.002 (40,0%) | Ingreso mensual $5,00 M; gastos esenciales $2,03 M; cuotas $262 mil; historial 180 meses; flujo +$2,66 M; proxy alto 100%. | Viabilidad estudio formal de crédito |
-| 1 | 9.131 (30,4%) | Ingreso mensual $1,47 M; gastos esenciales $1,22 M; cuotas $874 mil; historial 30 meses; flujo −$628 mil; proxy medio 89%. | Cuida tu historial crediticio |
-| 2 | 8.867 (29,6%) | Ingreso mensual $1,03 M; gastos esenciales $793 mil; sin cuotas ni historial; flujo +$358 mil; proxy bajo 95%. | Iniciemos con educación financiera |
+| 0 | 12.000 (40,0%) | Ingreso $5,00 M; gastos esenciales $2,03 M; cuotas $262 mil; historial 180 meses; flujo +$2,66 M; proxy alto 100%. Predomina empleo formal y salario fijo. | **Viabilidad estudio formal de crédito** |
+| 1 | 9.000 (30,0%) | Ingreso $1,03 M; gastos esenciales $791 mil; sin cuotas ni historial; flujo +$358 mil; proxy bajo 94,8%. Predomina estudio y apoyo familiar. | **Iniciemos con educación financiera** |
+| 2 | 9.000 (30,0%) | Ingreso $1,48 M; gastos esenciales $1,23 M; cuotas $885 mil; historial 30 meses; flujo −$631 mil; proxy medio 89,3%. Predomina ingreso informal e independiente. | **Cuida tu historial crediticio** |
 
-Los IDs de cluster son etiquetas internas arbitrarias y pueden cambiar al reentrenar. La comparación controlada del estudio obtuvo ARI 0,972 para Gower + K-Medoids, pero el artefacto de API se ajusta en una muestra de 1.800 y produce esta asignación final. La base es sintética y fue construida para separar perfiles; no se interpreta como riesgo, solvencia ni probabilidad de aprobación.
+Las cifras describen el ajuste reproducido el 23 de noviembre de 2026; el mapa no debe suponerse permanente tras volver a entrenar.
 
-## Rutas académicas propuestas
+## Recomendaciones de la demostración
 
-| Cluster de la base final | Ruta | Mensaje académico |
-|---:|---|---|
-| 0 | **Viabilidad estudio formal de crédito** | Invita a completar información en una siguiente sesión para revisar qué alternativa podría ajustarse a sus necesidades; no implica aprobación. |
-| 1 | **Cuida tu historial crediticio** | Muestra el cupo didáctico de $300.000 si el flujo es cero o negativo y $500.000 si es positivo. No es oferta ni recomendación de endeudamiento. |
-| 2 | **Iniciemos con educación financiera** | Invita a completar un curso corto antes de decidir sobre un primer crédito. La falta de historial no prueba falta de conocimientos financieros. |
+| Ruta | Respuesta académica |
+|---|---|
+| Viabilidad estudio formal | Invita a completar información en una siguiente sesión. No implica aprobación del crédito. |
+| Cuida tu historial crediticio | Muestra un cupo simulado de $300.000 si el flujo disponible es cero o negativo, y $500.000 si es positivo. Es un valor ficticio, no una oferta. |
+| Educación financiera | Invita a completar un curso corto e interactivo. La falta de historial no demuestra falta de conocimientos financieros. |
 
-En el artefacto regenerado, el mapa reportado por `GET /v1/modelo` es `0 → viabilidad_formal`, `1 → cuidar_historial`, `2 → educacion_financiera`. La API calcula los 10 campos derivados del pipeline y utiliza las seis variables categóricas y las diez numéricas descritas en la documentación de la base final. La API pública de Render requiere un despliegue posterior para recibir estos cambios.
+La API recalcula las 10 variables derivadas desde los campos de entrada, luego estima el cluster mediante K-Prototypes. La distancia al prototipo es una medida interna del algoritmo, no una probabilidad ni una calificación crediticia.
+
+Todos los perfiles son sintéticos. Los clusters no representan riesgo, solvencia ni probabilidad de aprobación y las recomendaciones son ilustrativas.
