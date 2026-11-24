@@ -34,8 +34,8 @@ class RecomendacionesAcademicasTests(unittest.TestCase):
                 self.assertEqual(recomendacion.nombre_grupo, "Cuida tu historial crediticio")
                 self.assertEqual(recomendacion.tipo, "cupo_simulado")
                 self.assertEqual(recomendacion.cupo_simulado_cop, cupo_esperado)
-                self.assertIn("simulación académica", recomendacion.mensaje)
-                self.assertIn("no una oferta ni", recomendacion.aclaracion)
+                self.assertIn("cupo de referencia", recomendacion.mensaje)
+                self.assertIn("no constituye aprobación ni oferta", recomendacion.aclaracion)
 
     def test_grupo_dos_orienta_a_educacion_financiera_sin_cupo(self):
         recomendacion = construir_recomendacion(ruta="educacion_financiera", flujo_disponible=500_000)
